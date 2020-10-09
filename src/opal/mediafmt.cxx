@@ -1223,6 +1223,10 @@ bool OpalMediaFormat::RegisterKnownMediaFormats(const PString & name)
     KNOWN(MPEG4),
     KNOWN(VP8),
 #endif
+#if OPAL_T38_CAPABILITY
+    KNOWN(T38),
+    KNOWN(T38_RTP),
+#endif
   };
 
   bool atLeastOne = false;
@@ -1902,7 +1906,7 @@ OpalAudioFormatInternal::OpalAudioFormatInternal(const char * fullName,
                                                  time_t timeStamp,
                                                  unsigned channels)
   : OpalMediaFormatInternal(fullName,
-                            "audio",
+                            OpalMediaType::Audio(),
                             rtpPayloadType,
                             encodingName,
                             true,
@@ -2037,7 +2041,7 @@ OpalVideoFormatInternal::OpalVideoFormatInternal(const char * fullName,
                                                  unsigned maxBitRate,
                                                  time_t timeStamp)
   : OpalMediaFormatInternal(fullName,
-                            "video",
+                            OpalMediaType::Video(),
                             rtpPayloadType,
                             encodingName,
                             false,

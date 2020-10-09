@@ -4136,17 +4136,17 @@ PObject::Comparison SIPSubscribe::EventPackage::InternalCompare(PINDEX offset, P
   for (;;) {
     if (length-- == 0)
       return EqualTo;
-    if (theArray[idx+offset] == '\0' && cstr[idx] == '\0')
+    if (GetAt(idx+offset) == '\0' && cstr[idx] == '\0')
       return EqualTo;
-    if (theArray[idx+offset] == ';' || cstr[idx] == ';')
+    if (GetAt(idx+offset) == ';' || cstr[idx] == ';')
       break;
-    int c = internal_strncmp(theArray+idx+offset, cstr+idx, 1);
+    int c = internal_strncmp(c_str()+idx+offset, cstr+idx, 1);
     if (c != 0)
       return PObject::Compare2(c, 0);
     idx++;
   }
 
-  const char * myIdPtr = strstr(theArray+idx+offset, "id");
+  const char * myIdPtr = strstr(c_str()+idx+offset, "id");
   const char * theirIdPtr = strstr(cstr+idx, "id");
   if (myIdPtr == NULL && theirIdPtr == NULL)
     return EqualTo;

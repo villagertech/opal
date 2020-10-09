@@ -570,36 +570,64 @@ void CallStatusPage::CreateContent(PHTML & html, const PStringToString &) const
        << PHTML::TableHeader()
        << PHTML::NonBreakSpace() << "Duration" << PHTML::NonBreakSpace()
        << "<!--#macrostart CallStatus-->"
-         << PHTML::TableRow()
-         << PHTML::TableData(PHTML::NoWrap)
-           << "<!--#status A-Party-->"
+         << PHTML::TableRow();
+  for (char party = 'A'; party <= 'B'; ++party)
+    html << PHTML::TableData(PHTML::NoWrap)
+           << "<!--#status " << party << "-Party-->"
            << PHTML::TableStart(PHTML::Border1, PHTML::NoCellSpacing, "width=\"100%\"")
            << PHTML::TableRow()
              << PHTML::TableHeader()
+               << PHTML::NonBreakSpace()
+             << PHTML::TableHeader(PHTML::AlignCentre) << PHTML::Small()
+               << "Bytes"
+             << PHTML::TableHeader(PHTML::AlignCentre) << PHTML::Small()
+               << "Packets"
+             << PHTML::TableHeader(PHTML::AlignCentre) << PHTML::Small()
+               << "Lost"
+             << PHTML::TableHeader(PHTML::AlignCentre) << PHTML::Small()
+               << "Discards"
+             << PHTML::TableHeader(PHTML::AlignCentre) << PHTML::Small()
+               << "Jitter"
+             << PHTML::TableHeader(PHTML::AlignCentre) << PHTML::Small()
+               << "Frames"
+             << PHTML::TableHeader(PHTML::AlignCentre) << PHTML::Small()
+               << "Key-Frames"
+             << PHTML::TableHeader(PHTML::AlignCentre) << PHTML::Small()
+               << "Requests"
+           << PHTML::TableRow()
+             << PHTML::TableHeader(PHTML::AlignRight) << PHTML::Small()
                << "Audio"
-             << PHTML::TableHeader()
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-audio-bytes-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-audio-packets-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-audio-lost-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-audio-lost-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-audio-discarded-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-audio-jitter-->"
+           << PHTML::TableRow()
+             << PHTML::TableHeader(PHTML::AlignRight) << PHTML::Small()
                << "Video"
-           << PHTML::TableRow()
-             << PHTML::TableData()
-               << "<!--#status A-audio-bytes-->"
-             << PHTML::TableData()
-               << "<!--#status A-video-bytes-->"
-           << PHTML::TableEnd()
-         << PHTML::TableData(PHTML::NoWrap)
-         << "<!--#status B-Party-->"
-           << PHTML::TableStart(PHTML::Border1, PHTML::NoCellSpacing, "width=\"100%\"")
-           << PHTML::TableRow()
-             << PHTML::TableHeader()
-               << "Audio"
-             << PHTML::TableHeader()
-               << "Video"
-           << PHTML::TableRow()
-             << PHTML::TableData()
-               << "<!--#status B-audio-bytes-->"
-             << PHTML::TableData()
-               << "<!--#status B-video-bytes-->"
-           << PHTML::TableEnd()
-         << PHTML::TableData()
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-video-bytes-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-video-packets-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-video-lost-->"
+             << PHTML::TableData(PHTML::AlignCentre, "colspan=2") << PHTML::Small()
+               << "<!--#status " << party << "-video-resolution-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-video-frames-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-video-key-frames-->"
+             << PHTML::TableData(PHTML::AlignRight) << PHTML::Small()
+               << "<!--#status " << party << "-video-key-requests-->"
+           << PHTML::TableEnd();
+  html   << PHTML::TableData()
          << "<!--#status Duration-->"
          << PHTML::TableData()
          << PHTML::SubmitButton("Clear", "!--#status Token--")
@@ -655,12 +683,24 @@ static PString BuildPartyStatus(const PString & party, const PString & name, con
 static void SetMediaStats(PString & insert, OpalCall & call, const OpalMediaType & mediaType, bool fromAparty)
 {
   static PConstString NA("N/A");
-  PString name = PSTRSTRM("status " << (fromAparty ? 'A' : 'B') << '-' << mediaType << "-bytes");
   OpalMediaStatistics stats;
-  if (call.GetStatistics(mediaType, true, stats))
-    PServiceHTML::SpliceMacro(insert, name, PString(PString::ScaleSI, stats.m_totalBytes, 3));
-  else
-    PServiceHTML::SpliceMacro(insert, name, NA);
+  bool gotStats = call.GetStatistics(mediaType, true, stats);
+  PString prefix = PSTRSTRM("status " << (fromAparty ? 'A' : 'B') << '-' << mediaType << '-');
+  PServiceHTML::SpliceMacro(insert, prefix + "bytes", gotStats ? PString(PString::ScaleSI, stats.m_totalBytes, 3) : NA);
+  PServiceHTML::SpliceMacro(insert, prefix + "packets", gotStats ? PString(stats.m_totalPackets) : NA);
+  PServiceHTML::SpliceMacro(insert, prefix + "lost", gotStats ? PString(stats.m_unrecovered) : NA);
+  if (mediaType == OpalMediaType::Audio()) {
+    PServiceHTML::SpliceMacro(insert, prefix + "jitter", gotStats ? PString(stats.m_jitterBufferDelay) : NA);
+    PServiceHTML::SpliceMacro(insert, prefix + "discarded", gotStats ? PString(stats.m_packetsTooLate+stats.m_packetOverruns) : NA);
+  }
+  #if OPAL_VIDEO
+    else if (mediaType == OpalMediaType::Video()) {
+      PServiceHTML::SpliceMacro(insert, prefix + "resolution", gotStats ? PSTRSTRM(stats.m_frameWidth << 'x' << stats.m_frameHeight) : NA);
+      PServiceHTML::SpliceMacro(insert, prefix + "frames", gotStats ? PString(stats.m_totalFrames) : NA);
+      PServiceHTML::SpliceMacro(insert, prefix + "key-frames", gotStats ? PString(stats.m_keyFrames) : NA);
+      PServiceHTML::SpliceMacro(insert, prefix + "key-requests", gotStats ? PString(stats.m_fullUpdateRequests+stats.m_pictureLossRequests) : NA);
+    }
+  #endif // OPAL_VIDEO
 }
 #endif // OPAL_STATISTICS
 

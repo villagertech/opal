@@ -91,6 +91,9 @@ static const char * const DefaultMediaFormatOrder[] = {
   OPAL_H263,
   OPAL_H261,
 #endif
+#if OPAL_T38_CAPABILITY
+  OPAL_T38_RTP,
+#endif
 #if OPAL_HAS_SIPIM
   OPAL_SIPIM,
 #endif
@@ -825,7 +828,9 @@ void OpalManager::InternalClearAllCalls(OpalConnection::CallEndReason reason, bo
 
 void OpalManager::OnClearedCall(OpalCall & PTRACE_PARAM(call))
 {
-  PTRACE(3, "OnClearedCall " << call << " from \"" << call.GetPartyA() << "\" to \"" << call.GetPartyB() << '"');
+  PTRACE(3, "OnClearedCall " << call << '\n'
+         << setw(20) << "Call end reason" << ": " << call.GetCallEndReason() << '\n'
+         << setprecision(2) << PTrace::LogObject(call.GetFinalStatistics()));
 }
 
 
@@ -1433,16 +1438,13 @@ static void OnStartStopMediaPatch(PScriptLanguage * script, const char * fn, Opa
 
 void OpalManager::OnStartMediaPatch(OpalConnection & connection, OpalMediaPatch & patch)
 {
+  PTRACE(3, "OnStartMediaPatch " << patch << " on " << connection);
+
 #if OPAL_SCRIPT
   OnStartStopMediaPatch(m_script, "OnStartMedia", connection, patch);
 #endif
-  PTRACE(3, "OnStartMediaPatch " << patch << " on " << connection);
 
-  if (&patch.GetSource().GetConnection() == &connection) {
-    PSafePtr<OpalConnection> other = connection.GetOtherPartyConnection();
-    if (other != NULL)
-      other->OnStartMediaPatch(patch);
-  }
+  connection.GetCall().OnStartMediaPatch(connection, patch);
 }
 
 
@@ -1454,19 +1456,27 @@ void OpalManager::OnStopMediaPatch(OpalConnection & connection, OpalMediaPatch &
   OnStartStopMediaPatch(m_script, "OnStopMedia", connection, patch);
 #endif
 
-  if (&patch.GetSource().GetConnection() == &connection) {
-    PSafePtr<OpalConnection> other = connection.GetOtherPartyConnection();
-    if (other != NULL)
-      other->OnStopMediaPatch(patch);
-  }
+  connection.GetCall().OnStopMediaPatch(connection, patch);
 }
 
 
-bool OpalManager::OnMediaFailed(OpalConnection & connection, unsigned)
+bool OpalManager::OnMediaFailed(OpalConnection & connection, unsigned, PChannel::Errors error)
 {
   if (connection.AllMediaFailed()) {
     PTRACE(2, "All media failed, releasing " << connection);
-    connection.Release(OpalConnection::EndedByMediaFailed);
+    switch (error) {
+      case PChannel::Timeout :
+        connection.Release(OpalConnection::EndedByMediaFailed);
+        break;
+      case PChannel::Unavailable :
+        connection.Release(OpalConnection::EndedByMediaTransportFail);
+        break;
+      case PChannel::NoError :
+        connection.Release(OpalConnection::EndedByMediaTransportClosed);
+        break;
+      default :
+        connection.Release(OpalConnection::CallEndReason(OpalConnection::EndedByCustomCode, (unsigned)error));
+    }
   }
   return true;
 }

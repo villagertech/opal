@@ -1401,9 +1401,9 @@ class OpalAudioFormat : public OpalMediaFormat
       Internal * info = NULL,
       bool dynamic = false
     );
-    OpalAudioFormat(
-      const char * fullName
-    ) : OpalMediaFormat(fullName) { }
+    OpalAudioFormat(const char * fullName) : OpalMediaFormat(fullName) { }
+    OpalAudioFormat(const PString & fullName) : OpalMediaFormat(fullName) { }
+    OpalAudioFormat(const OpalMediaFormat & other) { operator=(other); }
     OpalAudioFormat(
       const char * fullName,    ///<  Full name of media format
       RTP_DataFrame::PayloadTypes rtpPayloadType, ///<  RTP payload type code
@@ -1486,9 +1486,9 @@ class OpalVideoFormat : public OpalMediaFormat
       Internal * info = NULL,
       bool dynamic = false
     );
-    OpalVideoFormat(
-      const char * fullName
-    ) : OpalMediaFormat(fullName) { }
+    OpalVideoFormat(const char * fullName) : OpalMediaFormat(fullName) { }
+    OpalVideoFormat(const PString & fullName) : OpalMediaFormat(fullName) { }
+    OpalVideoFormat(const OpalMediaFormat & other) { operator=(other); }
     OpalVideoFormat(
       const char * fullName,    ///<  Full name of media format
       RTP_DataFrame::PayloadTypes rtpPayloadType, ///<  RTP payload type code
@@ -1726,6 +1726,7 @@ extern const OpalMediaFormat & GetOpalRFC2833();
 #if OPAL_T38_CAPABILITY
 extern const OpalMediaFormat & GetOpalCiscoNSE();
 extern const OpalMediaFormat & GetOpalT38();
+extern const OpalMediaFormat & GetOpalT38_RTP();
 #endif
 
 
@@ -1793,6 +1794,7 @@ extern const OpalMediaFormat & GetOpalT38();
 #define OpalRFC2833        GetOpalRFC2833()
 #define OpalCiscoNSE       GetOpalCiscoNSE()
 #define OpalT38            GetOpalT38()
+#define OpalT38_RTP        GetOpalT38_RTP()
 
 #if OPAL_VIDEO
 #define OpalH261       GetOpalH261()

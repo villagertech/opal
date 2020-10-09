@@ -40,6 +40,9 @@ endif
 ifndef exec_prefix
   exec_prefix := @exec_prefix@
 endif
+ifndef bindir
+  bindir := @bindir@
+endif
 ifndef libdir
   libdir := @libdir@
 endif

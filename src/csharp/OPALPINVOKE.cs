@@ -1443,6 +1443,12 @@ class OPALPINVOKE {
   [global::System.Runtime.InteropServices.DllImport("OPAL", EntryPoint="CSharp_OpalStatusCallCleared_reason_get")]
   public static extern string OpalStatusCallCleared_reason_get(global::System.Runtime.InteropServices.HandleRef jarg1);
 
+  [global::System.Runtime.InteropServices.DllImport("OPAL", EntryPoint="CSharp_OpalStatusCallCleared_statistics_set")]
+  public static extern void OpalStatusCallCleared_statistics_set(global::System.Runtime.InteropServices.HandleRef jarg1, string jarg2);
+
+  [global::System.Runtime.InteropServices.DllImport("OPAL", EntryPoint="CSharp_OpalStatusCallCleared_statistics_get")]
+  public static extern string OpalStatusCallCleared_statistics_get(global::System.Runtime.InteropServices.HandleRef jarg1);
+
   [global::System.Runtime.InteropServices.DllImport("OPAL", EntryPoint="CSharp_new_OpalStatusCallCleared")]
   public static extern global::System.IntPtr new_OpalStatusCallCleared();
 

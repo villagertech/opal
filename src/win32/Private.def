@@ -53,6 +53,8 @@ EXPORTS
     _vsnprintf_l @49750 NONAME
     _vsprintf_l @49751 NONAME
     _vsscanf_l @49752 NONAME
+    _get_protect_trailer_length
+    _stream_get_protect_trailer_length
 	a2u @49512 NONAME
     aes_decrypt_with_raw_key @49513 NONAME
     alaw2linear @49514 NONAME

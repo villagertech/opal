@@ -134,12 +134,12 @@ bool OpalICEMediaTransport::IsEstablished() const
 }
 
 
-void OpalICEMediaTransport::InternalRxData(SubChannels subchannel, const PBYTEArray & data)
+bool OpalICEMediaTransport::InternalRxData(SubChannels subchannel, const PBYTEArray & data)
 {
   if (GetICEState() == e_Disabled)
     return OpalUDPMediaTransport::InternalRxData(subchannel, data);
 
-  OpalMediaTransport::InternalRxData(subchannel, data);
+  return OpalMediaTransport::InternalRxData(subchannel, data) && GetICEState() == e_Completed;
 }
 
 
@@ -152,6 +152,7 @@ bool OpalICEMediaTransport::InternalOpenPinHole(PUDPSocket &)
 
 PChannel * OpalICEMediaTransport::AddWrapperChannels(SubChannels subchannel, PChannel * channel)
 {
+  // Should already be locked, or in ctor
   if (m_localCandidates.size() <= (size_t)subchannel)
     m_localCandidates.resize(subchannel + 1);
 
@@ -164,9 +165,7 @@ PChannel * OpalICEMediaTransport::AddWrapperChannels(SubChannels subchannel, PCh
 
 void OpalICEMediaTransport::SetCandidates(const PString & user, const PString & pass, const PNatCandidateList & remoteCandidates)
 {
-  PSafeLockReadWrite lock(*this);
-  if (!lock.IsLocked())
-    return;
+  P_INSTRUMENTED_LOCK_READ_WRITE(return);
 
   if (user.IsEmpty() || pass.IsEmpty()) {
     PTRACE(3, *this << "ICE disabled");
@@ -309,9 +308,7 @@ void OpalICEMediaTransport::SetCandidates(const PString & user, const PString & 
 
 bool OpalICEMediaTransport::GetCandidates(PString & user, PString & pass, PNatCandidateList & candidates, bool offering)
 {
-  PSafeLockReadWrite lock(*this);
-  if (!lock.IsLocked())
-    return false;
+  P_INSTRUMENTED_LOCK_READ_WRITE(return false);
 
   if (m_subchannels.empty()) {
     PTRACE(3, *this << "ICE cannot offer when transport not open");
@@ -420,10 +417,12 @@ bool OpalICEMediaTransport::GetCandidates(PString & user, PString & pass, PNatCa
 #if OPAL_STATISTICS
 void OpalICEMediaTransport::GetStatistics(OpalMediaStatistics & statistics) const
 {
+  P_INSTRUMENTED_LOCK_READ_ONLY(return);
+
   OpalMediaTransport::GetStatistics(statistics);
 
   statistics.m_candidates.clear();
-  for (size_t subchannel = 0; subchannel < m_subchannels.size(); ++subchannel) {
+  for (size_t subchannel = 0; subchannel < m_remoteCandidates.size(); ++subchannel) {
     for (CandidateStateList::const_iterator it = m_remoteCandidates[subchannel].begin(); it != m_remoteCandidates[subchannel].end(); ++it)
       statistics.m_candidates.push_back(*it);
   }
@@ -459,12 +458,13 @@ PBoolean OpalICEMediaTransport::ICEChannel::Read(void * data, PINDEX size)
  */
 bool OpalICEMediaTransport::InternalHandleICE(SubChannels subchannel, const void * data, PINDEX length)
 {
-  PSafeLockReadWrite lock(*this);
-  if (!lock.IsLocked())
-    return true;
+  P_INSTRUMENTED_LOCK_READ_WRITE(return true);
 
   if (m_state == e_Disabled)
     return true;
+
+  if (m_subchannels[subchannel].m_remoteGoneError == PChannel::Unavailable)
+    m_subchannels[subchannel].m_remoteGoneError = PChannel::ProtocolFailure;
 
   PUDPSocket * socket = GetSubChannelAsSocket(subchannel);
   PIPAddressAndPort ap;

@@ -429,6 +429,8 @@ public class OPALJNI {
   public final static native String OpalStatusCallCleared_callToken_get(long jarg1, OpalStatusCallCleared jarg1_);
   public final static native void OpalStatusCallCleared_reason_set(long jarg1, OpalStatusCallCleared jarg1_, String jarg2);
   public final static native String OpalStatusCallCleared_reason_get(long jarg1, OpalStatusCallCleared jarg1_);
+  public final static native void OpalStatusCallCleared_statistics_set(long jarg1, OpalStatusCallCleared jarg1_, String jarg2);
+  public final static native String OpalStatusCallCleared_statistics_get(long jarg1, OpalStatusCallCleared jarg1_);
   public final static native long new_OpalStatusCallCleared();
   public final static native void delete_OpalStatusCallCleared(long jarg1);
   public final static native void OpalParamCallCleared_callToken_set(long jarg1, OpalParamCallCleared jarg1_, String jarg2);

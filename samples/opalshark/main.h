@@ -35,6 +35,7 @@
 #include <ptlib_wx.h>
 #include <opal/manager.h>
 #include <rtp/pcapfile.h>
+#include <wx/listctrl.h>
 
 #ifndef OPAL_PTLIB_AUDIO
   #error Cannot compile without PTLib sound channel support!
@@ -48,7 +49,7 @@ class MyManager;
 class wxProgressDialog;
 class wxGrid;
 class wxGridEvent;
-class wxListCtrl;
+class wxNotebook;
 class wxSpinCtrl;
 
 
@@ -85,22 +86,51 @@ class OptionsDialog : public wxDialog
 };
 
 
-class VideoOutputWindow : public wxScrolledWindow
+class MyPlayer;
+
+class MediaStream : public wxListCtrl
 {
-  public:
-    VideoOutputWindow();
-    ~VideoOutputWindow();
+  MyPlayer      & m_player;
+  unsigned        m_clockRate;
+  bool            m_isDecoded;
+  bool            m_firstPacket;
+  PTime           m_firstTime;
+  PTime           m_lastTime;
+  unsigned        m_firstTimestamp;
+  unsigned        m_lastSequenceNumber;
+  unsigned        m_lastPacketTimestamp;
+  bool            m_lastFrameEnd;
+  unsigned        m_lastFrameTimestamp;
+  OpalAudioFormat m_audioFormat;
+  OpalVideoFormat m_videoFormat;
+  PThread       * m_thread;
+  bool            m_running;
+  OpalAudioFormat::FrameDetectorPtr m_audioFrameDetector;
+  OpalVideoFormat::FrameDetectorPtr m_videoFrameDetector;
+  OpalSilenceDetector::CalculateDB  m_dbCalculator;
+  OpalPCAPFile::DiscoveredRTPInfo   m_filterInfo;
+  OpalPCAPFile::DecodeContext       m_decodeContext;
 
-    void OutputVideo(const RTP_DataFrame & data);
-    void OnVideoUpdate();
-    void OnPaint(wxPaintEvent &);
+  void OnAnalysisUpdate(wxString, bool);
 
-    PColourConverter * m_converter;
-    wxBitmap   m_bitmap;
-    PMutex     m_mutex;
+  void PlayAudio();
+  void PlayVideo();
 
-  wxDECLARE_DYNAMIC_CLASS(VideoOutputWindow);
-  wxDECLARE_EVENT_TABLE();
+
+public:
+  MediaStream(MyPlayer & player, const OpalPCAPFile::DiscoveredRTPInfo & filterInfo);
+  ~MediaStream();
+
+  void StartThread();
+  bool IsRunning() const { return m_running; }
+
+  void Analyse(
+    unsigned packetNumber,
+    const RTP_DataFrame & encoded,
+    const RTP_DataFrame & decoded,
+    const PTime & thisTime,
+    OpalVideoFormat::FrameType videoFrameType = OpalVideoFormat::e_UnknownFrameType
+  );
 };
 
 
@@ -119,9 +149,9 @@ class MyPlayer : public wxMDIChildFrame
     void OnResume(wxCommandEvent &);
     void OnStep(wxCommandEvent &);
     void OnAnalyse(wxCommandEvent &);
-    void OnAnalysisUpdate(wxString, bool);
 
-    void Discover();
+    void Discover(OpalPCAPFile * pcapFile);
+    void OnDiscoverComplete();
     PDECLARE_NOTIFIER2(OpalPCAPFile, MyPlayer, DiscoverProgress, OpalPCAPFile::Progress &);
 
     enum Controls
@@ -136,18 +166,19 @@ class MyPlayer : public wxMDIChildFrame
     void OnPaused();
     void OnPlayEnded();
 
-    void PlayAudio();
-    void PlayVideo();
+    bool CanExport() const;
+    void StartExport(const PFilePath & mediaFile);
+    void Export(OpalPCAPFile * pcapFile, OpalRecordManager * recorder);
+    void OnExportComplete();
 
+  private:
     MyManager        & m_manager;
-    OpalPCAPFile       m_pcapFile;
+    PFilePath          m_pcapFilePath;
+    PThread          * m_backgroundThread;
+    auto_ptr<wxProgressDialog> m_progressDialog;
 
-    VideoOutputWindow * m_videoOutput;
-
-    PThread          * m_discoverThread;
-    wxProgressDialog * m_discoverProgress;
     OpalPCAPFile::DiscoveredRTP m_discoveredRTP;
-    unsigned m_packetCount;
+    unsigned                    m_packetCount;
 
     enum
     {
@@ -162,13 +193,14 @@ class MyPlayer : public wxMDIChildFrame
       NumCols
     };
     wxGrid * m_rtpList;
-    unsigned m_selectedRTP;
+    std::set<unsigned> m_selectedRows;
 
-    wxListCtrl * m_analysisList;
+    wxNotebook * m_streamTabs;
+    typedef std::map<RTP_SyncSourceId, MediaStream *> StreamBySSRC;
+    StreamBySSRC m_streamsBySSRC;
 
     Controls  m_playThreadCtrl;
     unsigned  m_pausePacket;
-    PThread * m_playThread;
 
     wxButton   * m_play;
     wxButton   * m_stop;
@@ -177,6 +209,8 @@ class MyPlayer : public wxMDIChildFrame
     wxButton   * m_step;
     wxButton   * m_analyse;
     wxSpinCtrl * m_playToPacket;
+
+  friend class MediaStream;
 
   wxDECLARE_EVENT_TABLE();
 };
@@ -189,20 +223,23 @@ class MyManager : public wxMDIParentFrame, public OpalManager
     ~MyManager();
 
     bool Initialise(bool startMinimised);
-    void Load(const PwxString & fname);
+    void Load(wxString fname);
 
     const MyOptions GetOptions() const { return m_options; }
 
   private:
+    void OnMenuOpen(wxMenuEvent &);
+
     void OnClose(wxCloseEvent &);
     void OnMenuQuit(wxCommandEvent &);
     void OnMenuAbout(wxCommandEvent &);
     void OnMenuOptions(wxCommandEvent &);
     void OnMenuOpenPCAP(wxCommandEvent &);
     void OnMenuCloseAll(wxCommandEvent &);
-    void OnMenuFullScreen(wxCommandEvent &);
+    void OnMenuExport(wxCommandEvent &);
 
     MyOptions m_options;
+    PwxString m_lastExportFile;
 
   wxDECLARE_EVENT_TABLE();
 };

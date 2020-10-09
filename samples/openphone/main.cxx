@@ -2758,6 +2758,8 @@ void MyManager::OnEvtEstablished(wxCommandEvent & theEvent)
 
 void MyManager::OnClearedCall(OpalCall & call)
 {
+  OpalManager::OnClearedCall(call);
+
   StopRingSound();
 
   PString name = call.GetPartyB().IsEmpty() ? call.GetPartyA() : call.GetPartyB();
@@ -7894,17 +7896,12 @@ void InCallPanel::SetVolume(bool isMicrophone, int value, bool muted)
 
 static void SetGauge(wxGauge * gauge, int level)
 {
-  if (level < 0 || level > 32767) {
+  if (level > 0)
     gauge->Show(false);
-    return;
+  else {
+    gauge->Show();
+    gauge->SetValue(level + 127); // Convert -127..0 to 0..127 as gauge doesn't do negatives
   }
-  gauge->Show();
-  int val = (int)(100*log10(1.0 + 9.0*level/8192.0)); // Convert to logarithmic scale
-  if (val < 0)
-    val = 0;
-  else if (val > 100)
-    val = 100;
-  gauge->SetValue(val);
 }
 
 
@@ -7918,8 +7915,8 @@ void InCallPanel::OnUpdateVU(wxTimerEvent & WXUNUSED(event))
     int spkLevel = -1;
     PSafePtr<OpalLocalConnection> connection;
     if (m_manager.GetConnection(connection, PSafeReadOnly)) {
-      spkLevel = connection->GetAudioSignalLevel(false);
-      micLevel = connection->GetAudioSignalLevel(true);
+      spkLevel = connection->GetAudioLevelDB(false);
+      micLevel = connection->GetAudioLevelDB(true);
 
       if (m_updateStatistics % 3 == 0) {
         PTime established = connection->GetPhaseTime(OpalConnection::EstablishedPhase);

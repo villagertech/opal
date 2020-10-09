@@ -76,7 +76,7 @@ typedef struct OpalHandleStruct * OpalHandle;
 typedef struct OpalMessage OpalMessage;
 
 /// Current API version
-#define OPAL_C_API_VERSION 40
+#define OPAL_C_API_VERSION 41
 
 
 ///////////////////////////////////////
@@ -1625,6 +1625,7 @@ typedef struct OpalStatusCallCleared {
                                    code corresponding to values in the
                                    OpalCallEndReason enum, followed by a colon and
                                    an English description. */
+  const char * m_statistics; ///< Final statistics for media streams.
 } OpalStatusCallCleared;
 
 
@@ -1666,7 +1667,8 @@ typedef enum OpalCallEndReason {
     OpalCallEndedByCallCompletedElsewhere, ///< Call cleared because it was answered by another extension.
     OpalCallEndedByCertificateAuthority,   ///< When using TLS, the remote certifcate was not authenticated
     OpalCallEndedByIllegalAddress,         ///< Destination Address  format was incorrect format
-    OpalCallEndedByCustomCode              ///< End call with custom protocol specific code (e.g. SIP)
+    OpalCallEndedByCustomCode,             ///< End call with custom protocol specific code (e.g. SIP)
+    OpalCallEndedByMediaTransportFail      ///< End call due to media transport failure, typically ICE error
 } OpalCallEndReason;
 
 

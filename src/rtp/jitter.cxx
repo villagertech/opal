@@ -229,10 +229,10 @@ ostream & operator<<(ostream & strm, const OpalAudioJitterBuffer::AdjustResult a
 
 /////////////////////////////////////////////////////////////////////////////
 
-OpalJitterBuffer::Init::Init(const OpalManager & manager, unsigned timeUnits)
-  : Params(manager.GetJitterParameters())
+OpalJitterBuffer::Init::Init(const Params & params, unsigned timeUnits, PINDEX packetSize)
+  : Params(params)
   , m_timeUnits(timeUnits)
-  , m_packetSize(manager.GetMaxRtpPacketSize())
+  , m_packetSize(packetSize)
 {
 }
 
@@ -332,6 +332,7 @@ OpalAudioJitterBuffer::OpalAudioJitterBuffer(const Init & init)
   , m_consecutiveLatePackets(0)
   , m_consecutiveOverflows(0)
   , m_consecutiveEmpty(0)
+  , m_packetTime(0)
   , m_lastSyncSource(0)
 #if PTRACING
   , m_lastRemoveTick(PTimer::Tick())
@@ -418,7 +419,6 @@ void OpalAudioJitterBuffer::InternalReset()
 {
   m_frameTimeCount    = 0;
   m_frameTimeSum      = 0;
-  m_packetTime = 0;
   m_lastSequenceNum   = USHRT_MAX;
   m_lastTimestamp     = UINT_MAX;
   m_lastBufferSize    = 0;
@@ -478,10 +478,11 @@ PBoolean OpalAudioJitterBuffer::WriteData(const RTP_DataFrame & frame, const PTi
 
   // Check for remote switching media senders, they shouldn't do this but do anyway
   if (newSyncSource != m_lastSyncSource) {
-    PTRACE_IF(2, m_lastSyncSource != 0, "Buffer reset due to SSRC change from "
+    PTRACE_IF(m_ssrcChangedThrottle, m_lastSyncSource != 0, "Buffer reset due to SSRC change from "
               << RTP_TRACE_SRC(m_lastSyncSource) << " to " << RTP_TRACE_SRC(newSyncSource)
-              << " at sn=" << currentSequenceNum);
+              << " at sn=" << currentSequenceNum << m_ssrcChangedThrottle);
     InternalReset();
+    m_packetTime = 0;
     m_packetsTooLate = m_bufferOverruns = 0; // Reset these stats for new SSRC
     m_lastSyncSource = newSyncSource;
   }
@@ -521,12 +522,12 @@ PBoolean OpalAudioJitterBuffer::WriteData(const RTP_DataFrame & frame, const PTi
     different time between packets than the nominal one for audio. */
   if (m_lastSequenceNum != USHRT_MAX) {
     if (timestamp < m_lastTimestamp) {
-      PTRACE_J(3, "Timestamps abruptly changed from " << m_lastTimestamp << " to " << timestamp << ", resynching");
+      PTRACE_J(2, "Timestamps abruptly changed from " << m_lastTimestamp << " to " << timestamp << ", resynching");
       InternalReset();
     }
     else if (m_lastSequenceNum+1 == currentSequenceNum && frame.GetPayloadType() != RTP_DataFrame::CN) {
       RTP_Timestamp delta = timestamp - m_lastTimestamp;
-      PTRACE_IF(std::min(sm_EveryPacketLogLevel,5U), m_packetTime == 0, "Wait frame time :"
+      PTRACE_IF(std::min(sm_EveryPacketLogLevel,5U), m_maxJitterDelay > 0 && m_packetTime == 0, "Wait frame time :"
                      " ts=" << timestamp << ","
                   " delta=" << delta << " (" << (delta/m_timeUnits) << "ms),"
                      " sn=" << currentSequenceNum);
@@ -543,11 +544,11 @@ PBoolean OpalAudioJitterBuffer::WriteData(const RTP_DataFrame & frame, const PTi
         if (std::abs(newFrameTime - (int)m_packetTime) >= (int)m_timeUnits) {
           m_packetTime = newFrameTime;
           PTRACE_PARAM(AdjustResult adjusted =) AdjustCurrentJitterDelay(0);
-          PTRACE_J(4, "Frame time set  : "
+          PTRACE_J(m_packetTimeChangedThrottle, "Frame time set  : "
                       "ts=" << timestamp << ", "
                       "size=" << m_frames.size() << ", "
                       "time=" << newFrameTime << " (" << (newFrameTime/m_timeUnits) << "ms), " <<
-                      adjusted << COMMON_TRACE_DELAY);
+                      adjusted << COMMON_TRACE_DELAY << m_packetTimeChangedThrottle);
         }
       }
     }
@@ -799,7 +800,7 @@ PBoolean OpalAudioJitterBuffer::ReadData(RTP_DataFrame & frame, const PTimeInter
       // Get rid of all the frames that are too late
       while (requiredTimestamp >= oldestFrame->first + m_packetTime) {
         if (++m_consecutiveLatePackets > 10) {
-          PTRACE_J(3, "Too many late   " COMMON_TRACE_INFO);
+          PTRACE_J(2, "Too many late   " COMMON_TRACE_INFO);
           InternalReset();
           return true;
         }
@@ -866,7 +867,7 @@ PBoolean OpalAudioJitterBuffer::ReadData(RTP_DataFrame & frame, const PTimeInter
      too late section above. */
   if (requiredTimestamp < oldestFrame->first) {
     if (oldestFrame->first - requiredTimestamp > m_timeUnits*1000) {
-      PTRACE_J(3, "Too far in ahead" COMMON_TRACE_INFO);
+      PTRACE_J(2, "Too far in ahead" COMMON_TRACE_INFO);
       InternalReset();
     }
     else {

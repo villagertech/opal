@@ -390,6 +390,30 @@ class OpalProductInfo
 };
 
 
+struct OpalConnectionInfo
+{
+  PString          m_identifier;
+  bool             m_originating;
+  OpalProductInfo  m_productInfo;
+  PString          m_localPartyName;
+  PString          m_localPartyURL;
+  PString          m_displayName;
+  PString          m_remotePartyName;
+  PString          m_remotePartyURL;
+  OpalProductInfo  m_remoteProductInfo;
+  PString          m_remotePartyNumber;
+  PString          m_redirectingParty;
+  PString          m_calledPartyNumber;
+  PString          m_calledPartyName;
+  vector<PTime>    m_phaseTime;
+
+  OpalConnectionInfo();
+  OpalConnectionInfo(OpalEndPoint & ep, size_t phases);
+  void ToLogging(ostream & strm) const;
+  void ToJSON(PJSON::Object & obj) const;
+};
+
+
 /**This is the base class for connections to an endpoint.
    A particular protocol will have a descendant class from this to implement
    the specific semantics of that protocols connection.
@@ -407,7 +431,7 @@ class OpalProductInfo
    When media streams are created they must make requests for bandwidth which
    is managed by the connection.
  */
-class OpalConnection : public PSafeObject
+class OpalConnection : public PSafeObject, protected OpalConnectionInfo
 {
     PCLASSINFO(OpalConnection, PSafeObject);
   public:
@@ -451,7 +475,9 @@ class OpalConnection : public PSafeObject
       EndedByCallCompletedElsewhere, ///< Call cleared because it was answered by another extension.
       EndedByCertificateAuthority,   ///< When using TLS, the remote certifcate was not authenticated
       EndedByIllegalAddress,         ///< Destination Address  format was incorrect format
-      EndedByCustomCode              ///< End call with custom protocol specific code (e.g. SIP)
+      EndedByCustomCode,             ///< End call with custom protocol specific code (e.g. SIP)
+      EndedByMediaTransportFail,     ///< End call due to media transport failure, typically ICE error
+      EndedByMediaTransportClosed    ///< End call due to media transport closed
     );
 
     struct CallEndReason {
@@ -561,6 +587,9 @@ class OpalConnection : public PSafeObject
     /**Destroy connection.
      */
     ~OpalConnection();
+
+    /// Get the connection ifnormation about this connection.
+    const OpalConnectionInfo & GetConnectionInfo() const { return *this; }
   //@}
 
   /**@name Overrides from PObject */
@@ -1311,7 +1340,8 @@ class OpalConnection : public PSafeObject
        @Return true if the specific media session is to be aborted.
       */
     virtual bool OnMediaFailed(
-      unsigned sessionId   ///< Session ID of media that stopped.
+      unsigned sessionId,    ///< Session ID of media that stopped.
+      PChannel::Errors error ///< Error code for failure
     );
 
     /**Indicate all media sessions have failed.
@@ -1384,11 +1414,11 @@ class OpalConnection : public PSafeObject
       bool & mute         ///< Flag for muted audio
     );
 
-    /**Get the average signal level (0..32767) for the audio media channel.
-       A return value of UINT_MAX indicates no valid signal, eg no audio channel opened.
+    /**Get the signal level in dBov (-127 to 0) for the audio media channel.
+       A return value of INT_MAX indicates no valid signal, eg no audio channel opened.
       */
-    virtual unsigned GetAudioSignalLevel(
-      PBoolean source                   ///< true for source (microphone), false for sink (speaker)
+    virtual int GetAudioLevelDB(
+      bool source   ///< true for source (microphone), false for sink (speaker)
     );
   //@}
 
@@ -1693,7 +1723,7 @@ class OpalConnection : public PSafeObject
 
     /**Get the local name/alias.
       */
-    virtual PString GetLocalPartyURL() const;
+    PString GetLocalPartyURL() const { return m_localPartyURL; }
 
     /**Get the local display name.
       */
@@ -1870,6 +1900,10 @@ class OpalConnection : public PSafeObject
       */
     virtual PString GetSupportedFeatures() const;
 
+    /**Get the audio jitter parameters.
+    */
+    const OpalJitterBuffer::Params & GetJitterParameters() const { return m_jitterParams; }
+
     /**Get the default maximum audio jitter delay parameter.
        Defaults to 50ms
      */
@@ -1898,9 +1932,8 @@ class OpalConnection : public PSafeObject
 #endif
 
     /**Get the protocol-specific unique identifier for this connection.
-       Default behaviour just returns the connection token.
      */
-    virtual PString GetIdentifier() const;
+    PString GetIdentifier() const;
 
     /**Get the maximum transmitted RTP payload size.
        This function allows a user to override the value returned on a
@@ -1960,31 +1993,17 @@ class OpalConnection : public PSafeObject
     Phases               m_phase;
 
   protected:
-    PString              m_callToken;
-    PBoolean             m_originating;
-    OpalProductInfo      m_productInfo;
-    PString              m_localPartyName;
-    PString              m_displayName;
-    PString              m_remotePartyName;
-    PString              m_remotePartyURL;
-    OpalProductInfo      m_remoteProductInfo;
-    PString              m_remotePartyNumber;
-    PString              m_redirectingParty;
-    CallEndReason        m_callEndReason;
-    PString              m_calledPartyNumber;
-    PString              m_calledPartyName;
-
-    SendUserInputModes   m_sendUserInputMode;
-    PString              m_userInputString;
-    PSyncPoint           m_userInputAvailable;
-
+    PString               m_callToken;
+    CallEndReason         m_callEndReason;
+    SendUserInputModes    m_sendUserInputMode;
+    PString               m_userInputString;
+    PSyncPoint            m_userInputAvailable;
     OpalSilenceDetector * m_silenceDetector;
 #if OPAL_AEC
     OpalEchoCanceler    * m_echoCanceler;
 #endif
     OpalMediaFormat       m_filterMediaFormat;
-
-    OpalMediaFormatList        m_localMediaFormats;
+    OpalMediaFormatList   m_localMediaFormats;
 
     struct StreamKey : PKey<uint64_t>
     {
@@ -2047,14 +2066,6 @@ class OpalConnection : public PSafeObject
     PDECLARE_ScriptFunctionNotifier(OpalConnection, ScriptGetRedirectingParty);
 #endif // OPAL_SCRIPT
 
-    // A version of PTime where default constructor creates invalid times
-    class ZeroTime : public PTime
-    {
-      public:
-        ZeroTime() : PTime(0) { }
-    };
-    ZeroTime m_phaseTime[NumPhases];
-
     std::set<unsigned> m_mediaSessionFailed;
     PDECLARE_MUTEX(    m_mediaSessionFailedMutex);
 
@@ -2089,6 +2100,7 @@ class OpalConnection : public PSafeObject
     P_REMOVE_VIRTUAL(bool,Hold(bool,bool),false);
     P_REMOVE_VIRTUAL(bool,ExecuteMediaCommand(const OpalMediaCommand &,unsigned,const OpalMediaType &) const,0);
     P_REMOVE_VIRTUAL(bool,OnMediaFailed(unsigned,bool),false);
+    P_REMOVE_VIRTUAL(bool,OnMediaFailed(unsigned),false);
 };
 
 #endif // OPAL_OPAL_CONNECTION_H

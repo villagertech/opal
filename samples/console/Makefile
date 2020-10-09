@@ -31,4 +31,6 @@ ifeq ($(OPAL_MAKE_DIR),)
 endif
 include $(OPAL_MAKE_DIR)/opal.mak
 
+install:
+	$(INSTALL) -D -m 755 $(TARGET) $(DESTDIR)$(bindir)/$(PROG)
 # End of Makefile

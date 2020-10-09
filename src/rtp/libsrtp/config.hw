@@ -182,6 +182,8 @@ typedef __int32		int32_t;
 typedef __int64		int64_t;
 #endif
 
+#define PRIx64 "llx"
+
 #ifdef _MSC_VER
 #pragma warning(disable:4311)
 #endif

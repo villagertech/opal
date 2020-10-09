@@ -364,7 +364,7 @@ AC_DEFUN([MY_OUTPUT_SUMMARY],[
    INTERNAL_OUTPUT_SUMMARY([                         CPPFLAGS], [CPPFLAGS])
    INTERNAL_OUTPUT_SUMMARY([                           CFLAGS], [CFLAGS])
    INTERNAL_OUTPUT_SUMMARY([                         CXXFLAGS], [CXXFLAGS])
-   INTERNAL_OUTPUT_SUMMARY([                          LDFLAGS], [CXXFLAGS])
+   INTERNAL_OUTPUT_SUMMARY([                          LDFLAGS], [LDFLAGS])
    INTERNAL_OUTPUT_SUMMARY([                             LIBS], [LIBS])
    AS_ECHO("")
    AS_ECHO("========================================================================")
@@ -514,7 +514,8 @@ case "$target_os" in
 
    darwin* )
       target_os=Darwin
-      target_release=10.14
+      target_release=`xcodebuild -showsdks | sed -n 's/.* macosx\(.*\)/\1/p' | sort | tail -n 1`
+      AS_VAR_SET_IF([target_release], , AC_MSG_ERROR([Unable to determine iOS release number]))
 
       CPPFLAGS="-mmacosx-version-min=$target_release $CPPFLAGS"
       LDFLAGS="-mmacosx-version-min=$target_release $LDFLAGS"
@@ -684,11 +685,11 @@ AC_SUBST(DEBUG_CFLAGS, "$DEBUG_FLAG $DEBUG_CFLAGS")
 
 AC_SUBST(OPT_CPPFLAGS, "-DNDEBUG $OPT_CPPFLAGS")
 MY_COMPILE_IFELSE(
-   [optimised build (-O3)],
-   [-O3],
+   [optimised build (-O2)],
+   [-O2],
    [],
    [],
-   [OPT_CFLAGS="-O3 $OPT_CFLAGS"],
+   [OPT_CFLAGS="-O2 $OPT_CFLAGS"],
    [OPT_CFLAGS="-O $OPT_CFLAGS"]
 )
 AC_SUBST(OPT_CFLAGS)
@@ -761,6 +762,19 @@ MY_COMPILE_IFELSE(
    [],
    [CPPFLAGS="-Wall $CPPFLAGS"]
 )
+
+
+ OLD_LDFLAGS="$LDFLAGS"
+ LDFLAGS="-rdynamic $LDFLAGS"
+ AC_MSG_CHECKING([Dynamic linker (-rdynamic)])
+ AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([],[])],
+    [AC_MSG_RESULT(yes)],
+    [
+       LDFLAGS="$OLD_LDFLAGS"
+       AC_MSG_RESULT(no)
+    ]
+ )
 
 
 dnl Check for profiling

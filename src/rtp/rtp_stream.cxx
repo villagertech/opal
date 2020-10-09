@@ -103,7 +103,9 @@ PBoolean OpalRTPMediaStream::Open()
 
   if (IsSource()) {
     delete m_jitterBuffer;
-    OpalJitterBuffer::Init init(m_connection.GetEndPoint().GetManager(), m_mediaFormat.GetTimeUnits());
+    OpalJitterBuffer::Init init(m_connection.GetJitterParameters(),
+                                m_mediaFormat.GetTimeUnits(),
+                                m_connection.GetEndPoint().GetManager().GetMaxRtpPayloadSize());
     m_jitterBuffer = OpalJitterBuffer::Create(m_mediaFormat.GetMediaType(), init);
     m_rtpSession.SetJitterBuffer(m_jitterBuffer, m_syncSource);
     m_rtpSession.AddDataNotifier(m_notifierPriority, m_receiveNotifier, m_syncSource);
@@ -219,7 +221,8 @@ void OpalRTPMediaStream::SetSyncSource(RTP_SyncSourceId ssrc)
   if (m_syncSource == ssrc)
     return;
 
-  if (IsSource()) {
+  bool adjustSession = IsOpen() && IsSource();
+  if (adjustSession) {
       m_rtpSession.SetJitterBuffer(NULL, m_syncSource);
       m_rtpSession.RemoveDataNotifier(m_receiveNotifier, m_syncSource);
   }
@@ -227,7 +230,7 @@ void OpalRTPMediaStream::SetSyncSource(RTP_SyncSourceId ssrc)
   PTRACE(3, "Changing SSRC=" << RTP_TRACE_SRC(m_syncSource) << " to SSRC=" << RTP_TRACE_SRC(ssrc) << " on stream " << *this);
   m_syncSource = ssrc;
 
-  if (IsSource()) {
+  if (adjustSession) {
     m_rtpSession.SetJitterBuffer(m_jitterBuffer, m_syncSource);
     m_rtpSession.AddDataNotifier(m_notifierPriority, m_receiveNotifier, m_syncSource);
   }
@@ -317,6 +320,10 @@ bool OpalRTPMediaStream::InternalExecuteCommand(const OpalMediaCommand & command
 
 void OpalRTPMediaStream::OnReceivedPacket(OpalRTPSession &, OpalRTPSession::Data & data)
 {
+  if (m_syncSource == 0 && !data.m_frame.GetSimulcastId().empty() &&
+          (m_simulcastId.empty() || data.m_frame.GetSimulcastId() == m_simulcastId))
+    SetSyncSource(data.m_frame.GetSyncSource());
+
   if (m_passThruStream == NULL) {
     if (m_jitterBuffer != NULL)
       m_jitterBuffer->WriteData(data.m_frame);

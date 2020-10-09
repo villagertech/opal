@@ -63,6 +63,12 @@ class RTP_MetricsReport;
   */
 #define OPAL_OPT_RTP_ABS_SEND_TIME "RTP-Abs-Send-Time"
 
+/**OpalConnection::StringOption key to a boolean indicating the AudioLevel
+   header extension (urn:ietf:params:rtp-hdrext:ssrc-audio-level)
+   can be used. Default false.
+  */
+#define OPAL_OPT_RTP_AUDIO_LEVEL "RTP-Audio-Level"
+
 /**OpalConnection::StringOption key to a boolean indicating the transport
    wide congestion control header extension and RTCP support
    (http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions)
@@ -74,6 +80,7 @@ class RTP_MetricsReport;
 ///////////////////////////////////////////////////////////////////////////////
 
 /**This class is for encpsulating the IETF Real Time Protocol interface.
+   This embodies an "RTP Session" as defined by RFC7656.
  */
 class OpalRTPSession : public OpalMediaSession
 {
@@ -387,23 +394,33 @@ class OpalRTPSession : public OpalMediaSession
       */
     void SetCanonicalName(const PString & name, RTP_SyncSourceId ssrc = 0, Direction dir = e_Sender);
 
+    /**Get the "RtpStreamId" for the RTP session SSRC.
+       See https://tools.ietf.org/html/draft-ietf-avtext-rid
+    */
+    PString GetRtpStreamId(RTP_SyncSourceId ssrc, Direction dir) const;
+
+    /**Set the "RtpStreamId" for the RTP session SSRC.
+       See https://tools.ietf.org/html/draft-ietf-avtext-rid
+    */
+    void SetRtpStreamId(const PString & id, RTP_SyncSourceId ssrc, Direction dir);
+
     /**Get the "MediaStream" id for the RTP session SSRC.
-       See http://tools.ietf.org/html/draft-ietf-mmusic-msid-12
+       See http://tools.ietf.org/html/draft-ietf-mmusic-msid
     */
     PString GetMediaStreamId(RTP_SyncSourceId ssrc, Direction dir) const;
 
     /**Set the "MediaStream" id for the RTP session SSRC.
-       See http://tools.ietf.org/html/draft-ietf-mmusic-msid-12
+       See http://tools.ietf.org/html/draft-ietf-mmusic-msid
     */
     void SetMediaStreamId(const PString & id, RTP_SyncSourceId ssrc, Direction dir);
 
     /**Get the "MediaStreamTrack" id for the RTP session SSRC.
-       See http://tools.ietf.org/html/draft-ietf-mmusic-msid-12
+       See http://tools.ietf.org/html/draft-ietf-mmusic-msid
     */
     PString GetMediaTrackId(RTP_SyncSourceId ssrc, Direction dir) const;
 
     /**Set the "MediaStreamTrack" id for the RTP session SSRC.
-       See http://tools.ietf.org/html/draft-ietf-mmusic-msid-12
+       See http://tools.ietf.org/html/draft-ietf-mmusic-msid
     */
     void SetMediaTrackId(const PString & id, RTP_SyncSourceId ssrc, Direction dir);
 
@@ -442,7 +459,11 @@ class OpalRTPSession : public OpalMediaSession
     bool AddHeaderExtension(const RTPHeaderExtensionInfo & ext);
 
     static const PString & GetAbsSendTimeHdrExtURI();
+    static const PString & GetAudioLevelHdrExtURI();
     static const PString & GetTransportWideSeqNumHdrExtURI();
+    static const PString & GetBundleMediaIdExtURI();
+    static const PString & GetRtpStreamIdExtURI();
+    static const PString & GetRepairedRtpStreamIdExtURI();
 
     /**Get the source identifier for remote data to us.
       */
@@ -685,7 +706,12 @@ class OpalRTPSession : public OpalMediaSession
     PString             m_label;
     RTPHeaderExtensions m_headerExtensions;
     unsigned            m_absSendTimeHdrExtId;
+    unsigned            m_audioLevelHdrExtId;
+    bool                m_vadHdrExtEnabled;
     unsigned            m_transportWideSeqNumHdrExtId;
+    unsigned            m_rtpStreamIdHdrExtId;
+    unsigned            m_repairedRtpStreamIdHdrExtId;
+    unsigned            m_groupMediaIdHdrExtId;
     bool                m_allowAnySyncSource;
     PTimeInterval       m_staleReceiverTimeout;
     PINDEX              m_maxOutOfOrderPackets; // Number of packets before we give up waiting for an out of order packet
@@ -764,6 +790,7 @@ class OpalRTPSession : public OpalMediaSession
       RTP_SyncSourceId  m_sourceIdentifier;
       RTP_SyncSourceId  m_loopbackIdentifier;
       PString           m_canonicalName;
+      PString           m_rtpStreamId;
       PString           m_mediaStreamId;
       PString           m_mediaTrackId;
 
@@ -820,6 +847,14 @@ class OpalRTPSession : public OpalMediaSession
       uint32_t m_absSendTimeLowBits;
 #if PTRACING
       unsigned m_absSendTimeLoglevel;
+#endif
+
+      // Handling Audio-Level header extension
+      unsigned m_mismatchThresholdVAD;
+      unsigned m_mismatchedSilentVAD;
+      unsigned m_mismatchedActiveVAD;
+#if PTRACING
+      unsigned m_audioLevelLoglevel;
 #endif
 
       // Statistics gathered
@@ -890,6 +925,7 @@ class OpalRTPSession : public OpalMediaSession
     SyncSourceMap    m_SSRC;
     SyncSource       m_dummySyncSource;
     RTP_SyncSourceId m_defaultSSRC[2]; // For e_Sender and e_Receiver
+    std::map<PString, RTP_SyncSourceId> m_rtpStreamIdToSendSSRC;
 
     const SyncSource & GetSyncSource(RTP_SyncSourceId ssrc, Direction dir) const;
     virtual bool GetSyncSource(RTP_SyncSourceId ssrc, Direction dir, SyncSource * & info);
@@ -897,6 +933,11 @@ class OpalRTPSession : public OpalMediaSession
     virtual SyncSource * CreateSyncSource(RTP_SyncSourceId id, Direction dir, const char * cname);
     virtual bool CheckControlSSRC(RTP_SyncSourceId senderSSRC, RTP_SyncSourceId targetSSRC, SyncSource * & info PTRACE_PARAM(, const char * pduName));
     virtual bool ResequenceOutOfOrderPackets(SyncSource & ssrc) const;
+
+    // Things needed to link primary and rtx in https://tools.ietf.org/html/draft-ietf-avtext-rid
+    RTP_DataFrame::PayloadTypes m_rtxPayloadTypeForRtpStreamId;
+    std::map<PString, RTP_SyncSourceId> m_rtxPrimaryByRtpStreamId, m_rtxByRepairRtpStreamId;
+    void OnRxRtpStreamId(SyncSource & receiver, const PString & id, bool repair);
 
     /// Set up RTCP as per RFC rules
     virtual bool InternalSendReport(RTP_ControlFrame & report, SyncSource & sender, bool includeReceivers, bool forced, const PTime & now);
@@ -928,6 +969,7 @@ class OpalRTPSession : public OpalMediaSession
     PTRACE_THROTTLE(m_throttleTxReport,3,60000,5);
     PTRACE_THROTTLE(m_throttleRxEmptyRR,3,60000);
     PTRACE_THROTTLE(m_throttleRxSDES,4,60000);
+    PTRACE_THROTTLE(m_throttleRxBundleId,5,1000);
 #if PTRACING
     std::set<RTP_SyncSourceId> m_loggedBadSSRC;
 #endif

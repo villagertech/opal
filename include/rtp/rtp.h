@@ -268,6 +268,13 @@ class RTP_ControlFrame : public PBYTEArray
       e_TOOL,
       e_NOTE,
       e_PRIV,
+      e_H323_CADDR,
+      e_ASPI,                // RFC6776
+      e_RGRP,                // https://www.iana.org/go/draft-ietf-avtcore-rtp-multi-stream-optimisation
+      e_RtpStreamId,         // https://www.iana.org/go/draft-ietf-avtext-rid
+      e_RepairedRtpStreamId, // https://www.iana.org/go/draft-ietf-avtext-rid
+      e_CCID,                // https://www.iana.org/go/draft-ietf-clue-rtp-mapping
+      e_MID,                 // https://www.iana.org/go/draft-ietf-mmusic-sdp-bundle-negotiation
       NumDescriptionTypes
     };
 
@@ -304,7 +311,10 @@ class RTP_ControlFrame : public PBYTEArray
       RTP_SyncSourceId ssrc,
       const PString & cname,
       const PString & toolName,
-      bool endPacket = true
+      const PString & mid,
+      const PString & rtpStreamId,
+      bool rtx,
+      bool endPacket
     );
 
     // Add RFC2032 Intra Frame Request
@@ -647,7 +657,8 @@ class RTP_DataFrame : public PBYTEArray
     enum HeaderExtensionType {
       RFC3550,
       RFC5285_OneByte,
-      RFC5285_TwoByte
+      RFC5285_TwoByte,
+      RFC5285_Auto  /// Automatically choose OneByte or TwoByte depending on id value
     };
 
     static const unsigned MaxHeaderExtensionId = 65535;
@@ -697,6 +708,12 @@ class RTP_DataFrame : public PBYTEArray
     // Get the packet size including headers, padding etc.
     PINDEX GetPacketSize() const;
 
+    enum VAD {
+        UnknownVAD,
+        InactiveVAD,
+        ActiveVAD
+    };
+
     /** Extra information about the RTP data packet.
         Note that m_absoluteTime and m_transmitTime are not synchronised with
         the local machine RTC, but the remote systems.
@@ -714,11 +731,18 @@ class RTP_DataFrame : public PBYTEArray
         PTime    m_receivedTime;  //< Local wall clock time packet was physically read from socket
         unsigned m_discontinuity; //< Number of packets lost since the last one
         PString  m_lipSyncId;     //< Identifier for pairing audio and video packets.
+        PString  m_simulcastId;   //< Identifier for simulcast stream
+        int      m_audioLevel;    //< Audio level for this packet in dBov (-127..0) as per RFC6464, INT_MAX means not used
+        VAD      m_vad;           //< Indicate Voice Activity Detect has detected voice.
     };
 
     /**Get meta data for RTP packet.
       */
     const MetaData & GetMetaData() const { return m_metaData; }
+
+    /**Get writable meta data for RTP packet.
+      */
+    MetaData & GetWritableMetaData() { return m_metaData; }
 
     /**Set meta data for RTP packet.
       */
@@ -757,6 +781,14 @@ class RTP_DataFrame : public PBYTEArray
         "lip synch" purposes.
     */
     void SetLipSyncId(const PString & id) { m_metaData.m_lipSyncId = id; }
+
+    /** Get the identifier that indicates the simulcast sub-stream.
+    */
+    const PString & GetSimulcastId() const { return m_metaData.m_simulcastId; }
+
+    /** Set the identifier that indicates the simulcast sub-stream.
+    */
+    void SetSimulcastId(const PString & id) { m_metaData.m_simulcastId = id; }
 
     // backward compatibility
     P_DEPRECATED const PString & GetBundleId() const { return m_metaData.m_lipSyncId; }

@@ -58,14 +58,14 @@ OPAL_INSTANTIATE_SIMPLE_MEDIATYPE(UserInputMediaDefinition, "userinput");
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const OpalMediaType & OpalMediaType::Audio()     { static const OpalMediaType type = OpalAudioMediaDefinition::Name(); return type; }
+const OpalMediaType & OpalMediaType::Audio()     { static const OpalMediaType type(true, OpalAudioMediaDefinition::Name()); return type; }
 #if OPAL_VIDEO
-const OpalMediaType & OpalMediaType::Video()     { static const OpalMediaType type = OpalVideoMediaDefinition::Name(); return type; }
+const OpalMediaType & OpalMediaType::Video()     { static const OpalMediaType type(true, OpalVideoMediaDefinition::Name()); return type; }
 #endif
 #if OPAL_T38_CAPABILITY
-const OpalMediaType & OpalMediaType::Fax()       { static const OpalMediaType type = OpalFaxMediaDefinition::Name();   return type; };
+const OpalMediaType & OpalMediaType::Fax()       { static const OpalMediaType type(true, OpalFaxMediaDefinition::Name());   return type; };
 #endif
-const OpalMediaType & OpalMediaType::UserInput() { static const OpalMediaType type = UserInputMediaDefinition::Name(); return type; };
+const OpalMediaType & OpalMediaType::UserInput() { static const OpalMediaType type(true, UserInputMediaDefinition::Name()); return type; };
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,6 +161,14 @@ void OpalMediaType::AutoStartMap::SetGlobalAutoStart()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void OpalMediaType::Construct(const char * name)
+{
+  OpalMediaTypeDefinition * def = OpalMediaTypesFactory::CreateInstance(OpalMediaType(true, name));
+  if (def != NULL)
+    *this = def->GetMediaType();
+}
+
+
 OpalMediaTypeDefinition * OpalMediaType::GetDefinition() const
 {
   return OpalMediaTypesFactory::CreateInstance(*this);
@@ -219,7 +227,7 @@ OpalMediaTypeDefinition::OpalMediaTypeDefinition(const char * mediaType,
                                                  const char * mediaSession,
                                                  unsigned defaultSessionId,
                                                  OpalMediaType::AutoStartMode autoStart)
-  : m_mediaType(mediaType)
+  : m_mediaType(true, mediaType)
   , m_mediaSessionType(mediaSession)
   , m_defaultSessionId(defaultSessionId)
   , m_autoStart(autoStart)

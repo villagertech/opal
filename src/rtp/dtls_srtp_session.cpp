@@ -286,6 +286,7 @@ bool OpalDTLSMediaTransport::Open(OpalMediaSession & session,
 
 PChannel * OpalDTLSMediaTransport::AddWrapperChannels(SubChannels subchannel, PChannel * channel)
 {
+  // Should already be locked, or in ctor
   return new DTLSChannel(*this, OpalDTLSMediaTransportParent::AddWrapperChannels(subchannel, channel));
 }
 

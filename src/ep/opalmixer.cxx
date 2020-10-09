@@ -388,7 +388,7 @@ bool OpalAudioMixer::MixStreams(RTP_DataFrame & frame)
 {
   // Expected to already be mutexed
 
-  if (m_stereo)
+  if (m_stereo && m_inputStreams.size() <= 2)
     MixStereo(frame);
   else {
     PreMixStreams();
@@ -615,7 +615,7 @@ bool OpalVideoMixer::MixVideo()
 
 bool OpalVideoMixer::StartMix(unsigned & x, unsigned & y, unsigned & w, unsigned & h, unsigned & left)
 {
-  switch (m_style) {
+  switch (m_inputStreams.size() > 2 ? eGrid : m_style) {
     case eSideBySideLetterbox:
       x = left = 0;
       y = m_height / 4;
@@ -899,12 +899,7 @@ bool OpalMixerEndPoint::GetConferenceStates(OpalConferenceStates & states, const
     }
   }
   else {
-    PSafePtr<OpalMixerNode> node;
-    if (name.NumCompare(GetPrefixName()+':') == EqualTo)
-      node = m_nodesByUID.Find(name.Mid(GetPrefixName().GetLength()+1), PSafeReadOnly);
-    else
-      node = m_nodesByName.Find(name, PSafeReadOnly);
-
+    PSafePtr<OpalMixerNode> node = m_nodesByName.Find(StripPrefixName(name), PSafeReadOnly);
     if (node != NULL) {
       states.push_back(OpalConferenceState());
       node->GetConferenceState(states.back());
@@ -1014,9 +1009,9 @@ OpalMixerConnection::OpalMixerConnection(PSafePtr<OpalMixerNode> node,
 
   const PStringSet & names = node->GetNames();
   if (names.IsEmpty())
-    m_localPartyName = node->GetGUID().AsString();
+    SetLocalPartyName(node->GetGUID().AsString());
   else
-    m_localPartyName = *names.begin();
+    SetLocalPartyName(*names.begin());
 
   PTRACE(4, "Constructed");
 }

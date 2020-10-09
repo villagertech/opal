@@ -86,8 +86,9 @@ class OpalJitterBuffer : public PObject
     struct Init : Params
     {
       Init(
-        const OpalManager & manager,
-        unsigned timeUnits
+        const Params & params,
+        unsigned timeUnits,
+        PINDEX packetSize
       );
       Init(
         const OpalMediaType & mediaType,
@@ -341,6 +342,8 @@ class OpalAudioJitterBuffer : public OpalJitterBuffer
     PTimeInterval m_lastInsertTick;
 #if PTRACING
     PTimeInterval m_lastRemoveTick;
+    PTRACE_THROTTLE(m_ssrcChangedThrottle, 2, 10000, 4);
+    PTRACE_THROTTLE(m_packetTimeChangedThrottle, 2, 10000, 4);
   public:
     static unsigned sm_EveryPacketLogLevel;
 #endif

@@ -6,13 +6,13 @@
     <script>
         function WebRTC() {
             this.dest = "";
+            this.simulcast = false;
             this.remoteVideo = null;
             this.preview = null;
             this.peerConnection = null;
             this.httpRequest = null;
 
-            this.constraints = {
-                voiceActivityDetection: false,
+            this.offerOptions = {
                 offerToReceiveAudio: true,
                 offerToReceiveVideo: true
             };
@@ -21,7 +21,7 @@
             this.start = function () {
                 this.peerConnection = new RTCPeerConnection({ bundlePolicy: "max-bundle" });
                 this.peerConnection.onicecandidate = this.onIceCandidate.bind(this);
-                this.peerConnection.oniceconnectionstatechange = this.onIceConnectionStateChanged.bind(this);
+                this.peerConnection.onconnectionstatechange = this.onConnectionStateChanged.bind(this);
                 this.peerConnection.ontrack = this.onRemoteTrackAdded.bind(this);
 
                 // Get the tx devices (microphone/camera) to use
@@ -41,18 +41,31 @@
             };
 
 
-            this.onIceConnectionStateChanged = function (evt) {
-                console.info("WebRTC ICE connection state:", this.peerConnection.iceConnectionState);
+            this.onConnectionStateChanged = function (evt) {
+                if (this.peerConnection) {
+                    console.info("WebRTC ICE connection state:", this.peerConnection.connectionState);
+                    if (this.peerConnection.connectionState == "closed")
+                        this.stop();
+                }
             };
 
 
             this.onGotMedia = function (stream) {
-                console.info(`WebRTC onGotMedia: attaching ${stream.id} to ${this.preview.id}`);
+                console.info(`WebRTC onGotMedia: attaching ${stream.id} to ${this.preview.id}, simulcast=${this.simulcast}`);
                 this.preview.srcObject = stream;
-                this.peerConnection.addStream(stream);
+                var tranceiverInit = { streams: [ stream ], sendEncodings: [] };
+                stream.getAudioTracks().forEach(track => this.peerConnection.addTransceiver(track, tranceiverInit));
+                if (this.simulcast) {
+                    tranceiverInit.sendEncodings = [
+                        { rid: 'f' },
+                        { rid: 'l', maxBitRate: 120000 },
+                        { rid: 'u', maxBitRate: 20000, scaleResolutionDownBy: 2.0 }
+                    ];
+                }
+                stream.getVideoTracks().forEach(track => this.peerConnection.addTransceiver(track, tranceiverInit));
 
-                console.debug("WebRTC creating offer:", JSON.stringify(this.constraints));
-                this.peerConnection.createOffer(this.constraints)
+                console.debug("WebRTC creating offer:", JSON.stringify(this.offerOptions));
+                this.peerConnection.createOffer(this.offerOptions)
                     .then(sessionDescription => this.peerConnection.setLocalDescription(sessionDescription))
                     .catch(error => console.error("WebRTC failed to create offer:", error.toString()));
             };
@@ -67,8 +80,12 @@
                 console.info("WebRTC ICE candidates completed");
                 console.debug("WebRTC offer sdp:\n" + this.peerConnection.localDescription.sdp);
 
+                var url = "/sdp?destination=" + this.dest;
+                if (this.simulcast)
+                    url += "&simulcast=true";
+
                 this.httpRequest = new XMLHttpRequest();
-                this.httpRequest.open('POST', "/sdp?destination=" + this.dest);
+                this.httpRequest.open('POST', url);
                 this.httpRequest.setRequestHeader('Content-Type', "application/sdp");
                 this.httpRequest.onreadystatechange = this.opalResponse.bind(this);
                 this.httpRequest.send(this.peerConnection.localDescription.sdp);
@@ -139,6 +156,7 @@
             webrtc.preview = document.getElementById("previewVideo");
             webrtc.remoteVideo = document.getElementById("remoteVideo");
             webrtc.dest = destFld.value;
+            webrtc.simulcast = document.getElementById("simulcast").checked;
             webrtc.start();
         }
 
@@ -159,12 +177,14 @@
         <tr>
             <th colspan="2">
                 Destination:&nbsp;
-                <input list="destinationList" size=150 id="dest" onchange="destChanged();" onselect="destChanged();" />
+                <input list="destinationList" size=100 id="dest" onchange="destChanged();" onselect="destChanged();" />
                 <datalist id="destinationList">
                     <option value="ivr:">
                     <option value="loopback:">
                     <option value="mcu:*">
                 </datalist>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <input type="checkbox" value="Simulcast" id="simulcast" />Simulcast
                 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <input type="button" value="Start Call" id="startBtn" onClick="startCall();" disabled />
                 &nbsp;&nbsp;

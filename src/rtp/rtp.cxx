@@ -49,6 +49,8 @@ RTP_DataFrame::MetaData::MetaData()
   , m_transmitTime(0)
   , m_receivedTime(0)
   , m_discontinuity(0)
+  , m_audioLevel(INT_MAX)
+  , m_vad(UnknownVAD)
 {
 }
 
@@ -324,6 +326,15 @@ BYTE * RTP_DataFrame::GetHeaderExtension(HeaderExtensionType type, unsigned idTo
   if (!GetExtension())
     return NULL;
 
+  if (type == RFC5285_Auto) {
+    if (idToFind <= MaxHeaderExtensionIdOneByte) {
+      BYTE * ext = GetHeaderExtension(RFC5285_OneByte, idToFind, length);
+      if (ext != NULL)
+        return ext;
+    }
+    type = RFC5285_TwoByte;
+  }
+
   BYTE * ptr = (BYTE *)&theArray[MinHeaderSize + 4*GetContribSrcCount()];
   unsigned idPresent = *(PUInt16b *)ptr;
   PINDEX extensionSize = *(PUInt16b *)(ptr += 2) * 4;
@@ -413,6 +424,9 @@ bool RTP_DataFrame::SetHeaderExtension(unsigned id, PINDEX length, const BYTE * 
     oldId = UINT_MAX; // definitely won't match anything
     extensionSize = 0;
   }
+
+  if (type == RFC5285_Auto)
+    type = id > MaxHeaderExtensionIdOneByte ? RFC5285_TwoByte : RFC5285_OneByte;
 
   switch (type) {
     case RFC3550 :
@@ -521,6 +535,10 @@ bool RTP_DataFrame::SetHeaderExtension(unsigned id, PINDEX length, const BYTE * 
           break;
         extensionSize -= currentLen;
       }
+      break;
+
+    default :
+      break;
   }
 
   // Calculate new RFC3550 header extension size, as we append new one to the end
@@ -1151,6 +1169,9 @@ bool RTP_ControlFrame::ParseSourceDescriptions(RTP_SourceDescriptionArray & desc
 void RTP_ControlFrame::AddSourceDescription(RTP_SyncSourceId ssrc,
                                             const PString & cname,
                                             const PString & toolName,
+                                            const PString & mid,
+                                            const PString & rtpStreamId,
+                                            bool rtx,
                                             bool endPacket)
 {
   StartNewPacket(RTP_ControlFrame::e_SourceDescription);
@@ -1159,6 +1180,10 @@ void RTP_ControlFrame::AddSourceDescription(RTP_SyncSourceId ssrc,
   StartSourceDescription(ssrc);
   AddSourceDescriptionItem(RTP_ControlFrame::e_CNAME, cname);
   AddSourceDescriptionItem(RTP_ControlFrame::e_TOOL, toolName);
+  if (!mid.IsEmpty())
+    AddSourceDescriptionItem(RTP_ControlFrame::e_MID, mid);
+  if (!rtpStreamId.IsEmpty())
+    AddSourceDescriptionItem(rtx ? RTP_ControlFrame::e_RepairedRtpStreamId : RTP_ControlFrame::e_RtpStreamId, rtpStreamId);
 
   if (endPacket)
     EndPacket();

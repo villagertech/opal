@@ -52,6 +52,14 @@ public class OpalStatusCallCleared {
     return OPALJNI.OpalStatusCallCleared_reason_get(swigCPtr, this);
   }
 
+  public void setStatistics(String value) {
+    OPALJNI.OpalStatusCallCleared_statistics_set(swigCPtr, this, value);
+  }
+
+  public String getStatistics() {
+    return OPALJNI.OpalStatusCallCleared_statistics_get(swigCPtr, this);
+  }
+
   public OpalStatusCallCleared() {
     this(OPALJNI.new_OpalStatusCallCleared(), true);
   }

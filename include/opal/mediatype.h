@@ -73,13 +73,16 @@ class OpalMediaType : public std::string     // do not make this PCaselessString
     { }
 
     OpalMediaType(const std::string & str)
-      : std::string(str) { }
+      { Construct(str.c_str()); }
 
     OpalMediaType(const char * str)
-      : std::string(str) { }
+      { Construct(str); }
 
     OpalMediaType(const PString & str)
-      : std::string((const char *)str) { }
+      { Construct(str); }
+
+    // Internal use only
+    OpalMediaType(bool, const char * name)  : std::string(name) { }
 
     static const OpalMediaType & Audio();
 #if OPAL_VIDEO
@@ -121,6 +124,9 @@ class OpalMediaType : public std::string     // do not make this PCaselessString
       protected:
         PDECLARE_MUTEX(m_mutex);
     };
+
+  protected:
+    void Construct(const char * name);
 };
 
 
@@ -214,7 +220,7 @@ class OpalMediaTypeDefinition
 //
 
 #define OPAL_INSTANTIATE_MEDIATYPE2(cls, name) \
-  PFACTORY_CREATE(OpalMediaTypesFactory, cls, name, true)
+  PFACTORY_CREATE(OpalMediaTypesFactory, cls, OpalMediaType(true, name), true)
 
 #define OPAL_INSTANTIATE_MEDIATYPE(cls) \
   OPAL_INSTANTIATE_MEDIATYPE2(cls, cls::Name())

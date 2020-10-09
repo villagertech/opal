@@ -445,10 +445,15 @@ bool OpalMediaStream::EnableJitterBuffer(bool enab)
   if (!IsOpen())
     return false;
 
-  PTRACE(4, (enab ? "En" : "Dis") << "abling jitter buffer on " << *this);
-  OpalJitterBuffer::Init init(m_connection.GetEndPoint().GetManager(), m_mediaFormat.GetTimeUnits());
+  OpalJitterBuffer::Init init(m_connection.GetJitterParameters(),
+                              m_mediaFormat.GetTimeUnits(),
+                              m_connection.GetEndPoint().GetManager().GetMaxRtpPacketSize());
   if (!enab)
     init.m_minJitterDelay = init.m_maxJitterDelay = 0;
+  else
+    enab = init.m_minJitterDelay > 0 && init.m_maxJitterDelay > 0;
+
+  PTRACE(4, (enab ? "En" : "Dis") << "abling jitter buffer on " << *this);
   return InternalSetJitterBuffer(init);
 }
 
@@ -789,8 +794,6 @@ OpalRawMediaStream::OpalRawMediaStream(OpalConnection & conn,
   , m_channel(chan)
   , m_autoDelete(autoDelete)
   , m_silence(10*sizeof(short)*mediaFormat.GetTimeUnits()) // At least 10ms
-  , m_averageSignalSum(0)
-  , m_averageSignalSamples(0)
 {
 }
 
@@ -852,7 +855,9 @@ PBoolean OpalRawMediaStream::ReadData(BYTE * buffer, PINDEX size, PINDEX & lengt
       return false;
     }
 
-    CollectAverage(buffer, lastReadCount);
+    m_dbCalculatorMutex.Wait();
+    m_dbCalculator.Accumulate(buffer, lastReadCount);
+    m_dbCalculatorMutex.Signal();
 
     m_timestamp += lastReadCount / sizeof(short);
     buffer += lastReadCount;
@@ -911,7 +916,9 @@ PBoolean OpalRawMediaStream::WriteData(const BYTE * buffer, PINDEX length, PINDE
   }
 
   written = m_channel->GetLastWriteCount();
-  CollectAverage(buffer, written);
+  m_dbCalculatorMutex.Wait();
+  m_dbCalculator.Accumulate(buffer, written);
+  m_dbCalculatorMutex.Signal();
   return true;
 }
 
@@ -948,31 +955,10 @@ void OpalRawMediaStream::InternalClose()
 }
 
 
-unsigned OpalRawMediaStream::GetAverageSignalLevel()
+int OpalRawMediaStream::GetAudioLevelDB()
 {
-  PWaitAndSignal mutex(m_averagingMutex);
-
-  if (m_averageSignalSamples == 0)
-    return UINT_MAX;
-
-  unsigned average = (unsigned)(m_averageSignalSum/m_averageSignalSamples);
-  m_averageSignalSum = average;
-  m_averageSignalSamples = 1;
-  return average;
-}
-
-
-void OpalRawMediaStream::CollectAverage(const BYTE * buffer, PINDEX size)
-{
-  PWaitAndSignal mutex(m_averagingMutex);
-
-  size = size/2;
-  m_averageSignalSamples += size;
-  const short * pcm = (const short *)buffer;
-  while (size-- > 0) {
-    m_averageSignalSum += PABS(*pcm);
-    pcm++;
-  }
+  PWaitAndSignal mutex(m_dbCalculatorMutex);
+  return m_dbCalculator.Finalise();
 }
 
 

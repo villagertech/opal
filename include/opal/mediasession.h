@@ -36,6 +36,7 @@
 #include <opal/transports.h>
 #include <opal/mediatype.h>
 #include <ptlib/notifier_ext.h>
+#include <ptclib/pjson.h>
 
 
 class OpalConnection;
@@ -75,13 +76,11 @@ struct OpalCodecStatistics
 };
 
 #if OPAL_ICE
-struct OpalCandidateStatistics : PNatCandidate
+struct OpalCandidateStatisticsInfo
 {
-  OpalCandidateStatistics(const PNatCandidate & cand);
+  OpalCandidateStatisticsInfo();
 
-  virtual void PrintOn(ostream & strm) const;
-
-  bool m_selected;
+  bool     m_selected;
   unsigned m_nominations;
   PTime    m_lastNomination;
 
@@ -93,6 +92,15 @@ struct OpalCandidateStatistics : PNatCandidate
     PTime    m_last;
     unsigned m_count;
   } m_rxRequests, m_txRequests;
+};
+
+struct OpalCandidateStatistics : PNatCandidate, OpalCandidateStatisticsInfo
+{
+  OpalCandidateStatistics() { }
+  OpalCandidateStatistics(const PNatCandidate & candidate) : PNatCandidate(candidate) { }
+  OpalCandidateStatistics(const OpalCandidateStatistics & other) : PNatCandidate(other), OpalCandidateStatisticsInfo(other) { }
+
+  virtual void PrintOn(ostream & strm) const;
 };
 #endif // OPAL_ICE
 
@@ -220,6 +228,7 @@ class OpalMediaStatistics : public PObject
     OpalMediaStatistics & operator=(const OpalMediaStatistics & other);
 
     virtual void PrintOn(ostream & strm) const;
+    void ToJSON(PJSON::Object & json) const;
 
     // To following fields are not copied by
     struct UpdateInfo
@@ -472,6 +481,9 @@ class OpalMediaTransport : public PSafeObject, public OpalMediaTransportChannelT
       int * mtu = NULL
     ) = 0;
 
+    /// Get the error code for the last read operation on transport
+    PChannel::Errors GetLastError(SubChannels subchannel) const;
+
 #if OPAL_SRTP
     /**Get encryption keys.
       */
@@ -534,7 +546,7 @@ class OpalMediaTransport : public PSafeObject, public OpalMediaTransportChannelT
   protected:
     virtual void InternalClose();
     virtual bool GarbageCollection(); // Override from PSafeObject
-    virtual void InternalRxData(SubChannels subchannel, const PBYTEArray & data);
+    virtual bool InternalRxData(SubChannels subchannel, const PBYTEArray & data);
 
     PString       m_name;
     bool          m_remoteBehindNAT;
@@ -585,10 +597,11 @@ class OpalMediaTransport : public PSafeObject, public OpalMediaTransportChannelT
       OpalTransportAddress m_localAddress;
       OpalTransportAddress m_remoteAddress;
       RemoteAddressSources m_remoteAddressSource;
+      PChannel::Errors     m_lastError;
+      PChannel::Errors     m_remoteGoneError;  // Error to report if remote disappears
 
-      PTRACE_THROTTLE(m_throttleWritePacket,3,60000); // 10 Minutes
+      PTRACE_THROTTLE(m_throttleWritePacket,3,60000);
       PTRACE_THROTTLE(m_throttleReadPacket,3,60000);
-      PTRACE_PARAM(bool m_logFirstRead);
 
 #if defined(__GNUC__) && __cplusplus < 201103
       void operator=(const ChannelInfo &) { }
@@ -630,7 +643,7 @@ class OpalUDPMediaTransport : public OpalMediaTransport
     PUDPSocket * GetSubChannelAsSocket(SubChannels subchannel = e_Media) const;
 
   protected:
-    virtual void InternalRxData(SubChannels subchannel, const PBYTEArray & data);
+    virtual bool InternalRxData(SubChannels subchannel, const PBYTEArray & data);
     virtual bool InternalSetRemoteAddress(const PIPSocket::AddressAndPort & ap, SubChannels subchannel, RemoteAddressSources source);
     virtual bool InternalOpenPinHole(PUDPSocket & socket);
 
@@ -745,6 +758,7 @@ class OpalMediaSession : public PSafeObject, public OpalMediaTransportChannelTyp
       const OpalMediaFormat & mediaFormat
     );
 
+    // https://tools.ietf.org/html/draft-ietf-mmusic-sdp-bundle-negotiation
     static const PString & GetBundleGroupId();
 
     /**Set the "group" id for the RTP session.

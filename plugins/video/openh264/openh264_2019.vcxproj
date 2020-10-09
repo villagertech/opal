@@ -125,8 +125,8 @@
     </ResourceCompile>
     <PreBuildEvent>
       <Command>if exist "$(OutDir)openh264_$(PlatformTarget).dll" exit 0
-cscript /nologo "$(ProjectDir)..\..\..\make\downloader.vbs" GetUnzip http://ciscobinary.openh264.org/openh264-2.0.0-win$(PlatformArchitecture).dll.bz2 "$(OutDir)"
-ren $(OutDir)openh264-2.0.0-win$(PlatformArchitecture).dll openh264_$(PlatformTarget).dll</Command>
+cscript /nologo "$(ProjectDir)..\..\..\make\downloader.vbs" GetUnzip http://ciscobinary.openh264.org/openh264-2.1.1-win$(PlatformArchitecture).dll.bz2 "$(OutDir)"
+ren $(OutDir)openh264-2.1.1-win$(PlatformArchitecture).dll openh264_$(PlatformTarget).dll</Command>
       <Message>Download Cisco OpenH264 DLL</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -165,8 +165,8 @@ ren $(OutDir)openh264-2.0.0-win$(PlatformArchitecture).dll openh264_$(PlatformTa
     <PreBuildEvent>
       <Message>Download Cisco OpenH264 DLL</Message>
       <Command>if exist "$(OutDir)openh264_$(PlatformTarget).dll" exit 0
-cscript /nologo "$(ProjectDir)..\..\..\make\downloader.vbs" GetUnzip http://ciscobinary.openh264.org/openh264-2.0.0-win$(PlatformArchitecture).dll.bz2 "$(OutDir)"
-ren $(OutDir)openh264-2.0.0-win$(PlatformArchitecture).dll openh264_$(PlatformTarget).dll</Command>
+cscript /nologo "$(ProjectDir)..\..\..\make\downloader.vbs" GetUnzip http://ciscobinary.openh264.org/openh264-2.1.1-win$(PlatformArchitecture).dll.bz2 "$(OutDir)"
+ren $(OutDir)openh264-2.1.1-win$(PlatformArchitecture).dll openh264_$(PlatformTarget).dll</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -209,8 +209,8 @@ xcopy /y/f "$OutDir)openh264_x64.dll" "$(ProgramFiles)\PTLib Plug Ins"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist "$(OutDir)openh264_$(PlatformTarget).dll" exit 0
-cscript /nologo "$(ProjectDir)..\..\..\make\downloader.vbs" GetUnzip http://ciscobinary.openh264.org/openh264-2.0.0-win$(PlatformArchitecture).dll.bz2 "$(OutDir)"
-ren $(OutDir)openh264-2.0.0-win$(PlatformArchitecture).dll openh264_$(PlatformTarget).dll</Command>
+cscript /nologo "$(ProjectDir)..\..\..\make\downloader.vbs" GetUnzip http://ciscobinary.openh264.org/openh264-2.1.1-win$(PlatformArchitecture).dll.bz2 "$(OutDir)"
+ren $(OutDir)openh264-2.1.1-win$(PlatformArchitecture).dll openh264_$(PlatformTarget).dll</Command>
       <Message>Download Cisco OpenH264 DLL</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -253,8 +253,8 @@ xcopy /y/f "$OutDir)openh264_x64.dll" "$(ProgramW6432)\PTLib Plug Ins"</Command>
     <PreBuildEvent>
       <Message>Download Cisco OpenH264 DLL</Message>
       <Command>if exist "$(OutDir)openh264_$(PlatformTarget).dll" exit 0
-cscript /nologo "$(ProjectDir)..\..\..\make\downloader.vbs" GetUnzip http://ciscobinary.openh264.org/openh264-2.0.0-win$(PlatformArchitecture).dll.bz2 "$(OutDir)"
-ren $(OutDir)openh264-2.0.0-win$(PlatformArchitecture).dll openh264_$(PlatformTarget).dll</Command>
+cscript /nologo "$(ProjectDir)..\..\..\make\downloader.vbs" GetUnzip http://ciscobinary.openh264.org/openh264-2.1.1-win$(PlatformArchitecture).dll.bz2 "$(OutDir)"
+ren $(OutDir)openh264-2.1.1-win$(PlatformArchitecture).dll openh264_$(PlatformTarget).dll</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

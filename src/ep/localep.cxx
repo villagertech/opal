@@ -46,17 +46,18 @@
 
 /////////////////////////////////////////////////////////////////////////////
 
-OpalLocalEndPoint::OpalLocalEndPoint(OpalManager & mgr, const char * prefix, bool useCallbacks)
+OpalLocalEndPoint::OpalLocalEndPoint(OpalManager & mgr, const char * prefix, bool useCallbacks, Synchronicity defaultSynchronicity)
   : OpalEndPoint(mgr, prefix, NoAttributes)
   , m_deferredAlerting(false)
   , m_deferredAnswer(false)
   , m_pauseTransmitMediaOnHold(true)
-  , m_defaultAudioSynchronicity(e_Synchronous)
-#if OPAL_VIDEO
-  , m_defaultVideoSourceSynchronicity(e_Synchronous)
-#endif // OPAL_VIDEO
 {
   PTRACE(3, "Created endpoint.");
+
+  SetDefaultAudioSynchronicity(defaultSynchronicity);
+#if OPAL_VIDEO
+  SetDefaultVideoSourceSynchronicity(defaultSynchronicity);
+#endif // OPAL_VIDEO
 
   if (useCallbacks) {
     OpalMediaTypeList mediaTypes = OpalMediaType::GetList();
@@ -250,22 +251,50 @@ bool OpalLocalEndPoint::CreateVideoOutputDevice(const OpalConnection & connectio
 #endif // OPAL_VIDEO
 
 
-OpalLocalEndPoint::Synchronicity
-        OpalLocalEndPoint::GetSynchronicity(const OpalMediaFormat & mediaFormat, bool
-#if OPAL_VIDEO
-                                            isSource
-#endif
-                                            ) const
+OpalLocalEndPoint::Synchronicity OpalLocalEndPoint::GetDefaultSynchronicity(const OpalMediaType & mediaType, bool isSource) const
 {
-  if (mediaFormat.GetMediaType() == OpalMediaType::Audio())
-    return m_defaultAudioSynchronicity;
+  SynchronicityMap::const_iterator it = m_defaultSynchronicity.find(mediaType);
+  return it != m_defaultSynchronicity.end() ? it->second.m_default[isSource] : e_Asynchronous;
+}
+
+
+void OpalLocalEndPoint::SetDefaultSynchronicity(const OpalMediaType & mediaType, bool isSource, Synchronicity sync)
+{
+  m_defaultSynchronicity[mediaType].m_default[isSource] = sync;
+}
+
+
+OpalLocalEndPoint::Synchronicity OpalLocalEndPoint::GetDefaultAudioSynchronicity() const
+{
+  PAssert(GetDefaultSynchronicity(OpalMediaType::Audio(), false) == GetDefaultSynchronicity(OpalMediaType::Audio(), true), PLogicError);
+  return GetDefaultSynchronicity(OpalMediaType::Audio(), false);
+}
+
+
+void OpalLocalEndPoint::SetDefaultAudioSynchronicity(Synchronicity sync)
+{
+  SetDefaultSynchronicity(OpalMediaType::Audio(), false, sync);
+  SetDefaultSynchronicity(OpalMediaType::Audio(), true,  sync);
+}
+
 
 #if OPAL_VIDEO
-  if (isSource && mediaFormat.GetMediaType() == OpalMediaType::Video())
-    return m_defaultVideoSourceSynchronicity;
-#endif
+OpalLocalEndPoint::Synchronicity OpalLocalEndPoint::GetDefaultVideoSourceSynchronicity() const
+{
+  return GetDefaultSynchronicity(OpalMediaType::Video(), true);
+}
 
-  return e_Asynchronous;
+
+void OpalLocalEndPoint::SetDefaultVideoSourceSynchronicity(Synchronicity sync)
+{
+  SetDefaultSynchronicity(OpalMediaType::Video(), true, sync);
+}
+#endif // OPAL_VIDEO
+
+
+OpalLocalEndPoint::Synchronicity OpalLocalEndPoint::GetSynchronicity(const OpalMediaFormat & mediaFormat, bool isSource) const
+{
+  return GetDefaultSynchronicity(mediaFormat.GetMediaType(), isSource);
 }
 
 
@@ -768,5 +797,10 @@ PBoolean OpalLocalMediaStream::IsSynchronous() const
   return m_synchronicity != OpalLocalEndPoint::e_Asynchronous;
 }
 
+
+PBoolean OpalLocalMediaStream::RequiresPatchThread(OpalMediaStream *) const
+{
+  return IsSink() || m_synchronicity != OpalLocalEndPoint::e_PushSynchronous;
+}
 
 /////////////////////////////////////////////////////////////////////////////

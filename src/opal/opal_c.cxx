@@ -2936,6 +2936,11 @@ void OpalManager_C::OnClearedCall(OpalCall & call)
   PTRACE(4, "OnClearedCall:"
             " token=\""  << message->m_param.m_callCleared.m_callToken << "\""
             " reason=\"" << message->m_param.m_callCleared.m_reason << '"');
+
+  PJSON json(PJSON::e_Object);
+  call.GetFinalStatistics().ToJSON(json.GetObject());
+  SET_MESSAGE_STRING(message, m_param.m_callCleared.m_statistics, json.AsString());
+
   PostMessage(message);
 
   OpalManager::OnClearedCall(call);

@@ -1,0 +1,10 @@
+[mcu-release]
+name=mcu-release
+baseurl=http://nexus.bbcollab.net/yum/el7/mcu-release/
+gpgcheck=false
+
+[mcu-develop]
+name=mcu-develop
+baseurl=http://nexus.bbcollab.net/yum/el7/mcu-develop/
+gpgcheck=false
+

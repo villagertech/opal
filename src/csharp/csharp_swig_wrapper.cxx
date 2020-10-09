@@ -312,7 +312,7 @@ SWIGEXPORT int SWIGSTDCALL CSharp_OPAL_C_API_VERSION_get() {
   int jresult ;
   int result;
   
-  result = (int)(40);
+  result = (int)(41);
   jresult = result; 
   return jresult;
 }
@@ -5513,6 +5513,35 @@ SWIGEXPORT char * SWIGSTDCALL CSharp_OpalStatusCallCleared_reason_get(void * jar
   
   arg1 = (OpalStatusCallCleared *)jarg1; 
   result = (char *) ((arg1)->m_reason);
+  jresult = SWIG_csharp_string_callback((const char *)result); 
+  return jresult;
+}
+
+
+SWIGEXPORT void SWIGSTDCALL CSharp_OpalStatusCallCleared_statistics_set(void * jarg1, char * jarg2) {
+  OpalStatusCallCleared *arg1 = (OpalStatusCallCleared *) 0 ;
+  char *arg2 = (char *) 0 ;
+  
+  arg1 = (OpalStatusCallCleared *)jarg1; 
+  arg2 = (char *)jarg2; 
+  {
+    if (arg2) {
+      arg1->m_statistics = (char const *) (new char[strlen((const char *)arg2)+1]);
+      strcpy((char *)arg1->m_statistics, (const char *)arg2);
+    } else {
+      arg1->m_statistics = 0;
+    }
+  }
+}
+
+
+SWIGEXPORT char * SWIGSTDCALL CSharp_OpalStatusCallCleared_statistics_get(void * jarg1) {
+  char * jresult ;
+  OpalStatusCallCleared *arg1 = (OpalStatusCallCleared *) 0 ;
+  char *result = 0 ;
+  
+  arg1 = (OpalStatusCallCleared *)jarg1; 
+  result = (char *) ((arg1)->m_statistics);
   jresult = SWIG_csharp_string_callback((const char *)result); 
   return jresult;
 }

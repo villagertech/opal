@@ -63,6 +63,16 @@ public class OpalStatusCallCleared : global::System.IDisposable {
     } 
   }
 
+  public string statistics {
+    set {
+      OPALPINVOKE.OpalStatusCallCleared_statistics_set(swigCPtr, value);
+    } 
+    get {
+      string ret = OPALPINVOKE.OpalStatusCallCleared_statistics_get(swigCPtr);
+      return ret;
+    } 
+  }
+
   public OpalStatusCallCleared() : this(OPALPINVOKE.new_OpalStatusCallCleared(), true) {
   }
 
