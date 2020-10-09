@@ -1,0 +1,41 @@
+<Include>
+    <?include $(var.ProjectDir)\version.wxs ?>
+
+    <?define ProductName = "OPAL Server" ?>
+    <?define ProductDescription = "VoIP gateway and IVR server for OPAL" ?>
+    <?define ProductBaseFilename = "opalserver" ?>
+    <?define ProductVersion = "$(var.OPAL_VERSION)" ?>
+    <?define ProductManufacturer = "Vox Lucida Pty. Ltd." ?>
+    <?define ProductGUID = "c972f876-ca15-43e4-8e0e-f8a74c5f925a" ?>
+
+    <?define CustomWXS = "$(sys.CURRENTDIR)\custom.wxs" ?>
+    <?define CustomHTML = "" ?>
+    <?define CustomProgramMenuFolder = "yes" ?>
+
+    <?if $(var.Architecture) = "x86" ?>
+        <?define SSLDir = "$(env.ProgramW6432)\OpenSSL-Win32\bin" ?>
+        <?define LuaDir = "$(env.LUA32DIR)" ?>
+        <?define V8Dir = "$(env.V8_DIR)\v8\out.gn\ia32.release" ?>
+        <?define SaslDir = "C:\Tools\bin" ?>
+        <?define LDAPDir = "C:\Tools\bin" ?>
+        <?define FFMPEGDir = "$(env.FFMPEG32DIR)\bin" ?>
+        <?define SpanDspDir = "$(env.SPANDSPDIR)\src\Release" ?>
+    <?else?>
+        <?define SSLDir = "$(env.ProgramW6432)\OpenSSL-Win64\bin" ?>
+        <?define LuaDir = "$(env.LUA64DIR)" ?>
+        <?define V8Dir = "$(env.V8_DIR)\v8\out.gn\x64.release" ?>
+        <?define FFMPEGDir = "$(env.FFMPEG64DIR)\bin" ?>
+        <?define SpanDspDir = "$(env.SPANDSPDIR)\src\x64\Release" ?>
+    <?endif?>
+
+    <?define AVFORMATVer = "58" ?>
+    <?define AVCODECVer = "58" ?>
+    <?define AVUTILVer = "56" ?>
+    <?define SWRESAMPLEVer = "3" ?>
+    <?define SWSCALEVer = "5" ?>
+  
+    <?define PTLibDir = "$(var.ProjectDir)..\..\..\ptlib" ?>
+    <?define OPALDir = "$(var.ProjectDir)..\.." ?>
+
+
+</Include>

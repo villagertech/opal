@@ -1,0 +1,31 @@
+<Include>
+    <?define ProductName = "OPAL Shark" ?>
+    <?define ProductDescription = "Media Player for RTP in PCAP files" ?>
+    <?define ProductBaseFilename = "OpalShark" ?>
+    <?define ProductVersion = "1.1.0" ?>
+    <?define ProductManufacturer = "Vox Lucida Pty. Ltd." ?>
+    <?define ProductGUID = "48bff92f-98f9-45fb-a233-db3e2c496d4a" ?>
+
+    <?if $(var.Architecture) = "x86" ?>
+        <?define LuaDir = "$(env.LUA32DIR)" ?>
+        <?define SSLDir = "$(env.ProgramW6432)\OpenSSL-Win32\bin" ?>
+        <?define FFMPEGDir = "$(env.FFMPEG32DIR)\bin" ?>
+    <?else?>
+        <?define LuaDir = "$(env.LUA64DIR)" ?>
+        <?define SSLDir = "$(env.ProgramW6432)\OpenSSL-Win64\bin" ?>
+        <?define FFMPEGDir = "$(env.FFMPEG64DIR)\bin" ?>
+    <?endif?>
+
+    <?define AVFORMATVer = "58" ?>
+    <?define AVCODECVer = "58" ?>
+    <?define AVUTILVer = "56" ?>
+    <?define SWRESAMPLEVer = "3" ?>
+    <?define SWSCALEVer = "5" ?>
+
+    <?define WxDir = "$(env.WXDIR)" ?>
+    <?define WxVer = "$(env.WXVER)3" ?>
+    <?define WxCustom = "no" ?>
+
+    <?define PTLibDir = "$(var.ProjectDir)..\..\..\ptlib" ?>
+    <?define OPALDir = "$(var.ProjectDir)..\.." ?>
+</Include>

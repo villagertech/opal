@@ -1,0 +1,105 @@
+LIBRARY OPAL
+EXPORTS
+;Must tell MergeSym that these symbols are not to be exported
+    ___local_stdio_printf_options @50255 NONAME
+    ___local_stdio_scanf_options @50256 NONAME
+    ___isa_available_default @35266 NONAME
+    __vfprintf_l @50248 NONAME
+    __vsnprintf_l @50249 NONAME
+    __vsprintf_l @50250 NONAME
+    __vsscanf_l @50251 NONAME
+    __local_stdio_printf_options @49754 NONAME
+    __local_stdio_scanf_options @49755 NONAME
+    _CTA2?AVbad_cast@std@@ @47922 NONAME
+    _a2u @49750 NONAME
+    _aes_decrypt_with_raw_key @49751 NONAME
+    _alaw2linear @49752 NONAME
+    _alaw2ulaw @49753 NONAME
+    _be_int @49754 NONAME
+    _ceilf @49760 NONAME
+    _crypto_kernel @49761 NONAME
+    _expf @49762 NONAME
+    _fabsf @49763 NONAME
+    _fixed_point @49764 NONAME
+    _fprintf @49765 NONAME
+    _le_int @49773 NONAME
+    _linear2alaw @49774 NONAME
+    _linear2ulaw @49775 NONAME
+    _mod_alloc @49776 NONAME
+    _mod_srtp @49777 NONAME
+    _mod_stat @49778 NONAME
+    _octet_get_weight @49779 NONAME
+    _octet_string_is_eq @49780 NONAME
+    _octet_string_set_to_zero @49781 NONAME
+    _octet_weight @49782 NONAME
+    _powf @49783 NONAME
+    _printf @49784 NONAME
+    _print_vec @49785 NONAME
+    _sprintf @49812 NONAME
+    _sscanf @49969 NONAME
+    _stat_test_monobit @49970 NONAME
+    _stat_test_poker @49971 NONAME
+    _stat_test_runs @49972 NONAME
+    _u2a @49973 NONAME
+    _ulaw2alaw @49974 NONAME
+    _ulaw2linear @49975 NONAME
+    _ut_compar @49976 NONAME
+    _ut_init @49977 NONAME
+    _ut_next_index @49978 NONAME
+    _vfprintf @49984 NONAME
+    _vsnprintf @49985 NONAME
+    _wmemcpy @49986 NONAME
+    _vfprintf_l @49749 NONAME
+    _vsnprintf_l @49750 NONAME
+    _vsprintf_l @49751 NONAME
+    _vsscanf_l @49752 NONAME
+	a2u @49512 NONAME
+    aes_decrypt_with_raw_key @49513 NONAME
+    alaw2linear @49514 NONAME
+    alaw2ulaw @49515 NONAME
+    be_int @49516 NONAME
+    crypto_kernel @49522 NONAME
+    fabsf @49523 NONAME
+    fixed_point @49524 NONAME
+    fprintf @49525 NONAME
+    le_int @49533 NONAME
+    linear2alaw @49534 NONAME
+    linear2ulaw @49535 NONAME
+    mod_alloc @49536 NONAME
+    mod_srtp @49537 NONAME
+    mod_stat @49538 NONAME
+    octet_get_weight @49539 NONAME
+    octet_string_is_eq @49540 NONAME
+    octet_string_set_to_zero @49541 NONAME
+    octet_weight @49542 NONAME
+    printf @49543 NONAME
+    print_vec @49544 NONAME
+    sprintf @49571 NONAME
+    sscanf @49728 NONAME
+    stat_test_monobit @49729 NONAME
+    stat_test_poker @49730 NONAME
+    stat_test_runs @49731 NONAME
+    u2a @49732 NONAME
+    ulaw2alaw @49733 NONAME
+    ulaw2linear @49734 NONAME
+    ut_compar @49735 NONAME
+    ut_init @49736 NONAME
+    ut_next_index @49737 NONAME
+    vfprintf @49743 NONAME
+    vsnprintf @49744 NONAME
+    bitvector_*
+    _bitvector_*
+    kiss_*
+    _kiss_*
+    speex_*
+    _speex_*
+    spx_*
+    _spx_*
+    srtcp_*
+    _srtcp_*
+    srtp_*
+    _srtp_*
+    SHA_*
+    _SHA_*
+    v128_*
+    _v128_*
