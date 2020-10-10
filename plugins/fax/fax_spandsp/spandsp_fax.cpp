@@ -47,7 +47,7 @@
 
 extern "C" {
   #define _INTTYPES_H_ 1
-  #include "spandsp.h"
+  #include "spandsp3.h"
 };
 
 

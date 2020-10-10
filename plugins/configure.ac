@@ -386,13 +386,13 @@ dnl ########################################################################
 
 OPAL_SYSTEM_PLUGIN(
    [SPANDSP],
-   [spandsp],
+   [spandsp3],
    [SpanDSP based fax],
    [$PLUGIN_SRC_DIR/fax/fax_spandsp],
-   [spandsp],
+   [spandsp3],
    [],
-   [-lspandsp],
-   [#include <spandsp.h>],
+   [-lspandsp3],
+   [#include <spandsp3.h>],
    [fax_state_t * fax = fax_init(NULL, 1)]
 )
 

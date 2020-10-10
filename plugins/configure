@@ -11604,7 +11604,7 @@ if test "${with_spandsp_dir+set}" = set; then :
                   { $as_echo "$as_me:${as_lineno-$LINENO}: Using directory $withval for SpanDSP based fax" >&5
 $as_echo "$as_me: Using directory $withval for SpanDSP based fax" >&6;}
                   SPANDSP_CFLAGS="-I$withval/include "
-                  SPANDSP_LIBS="-L$withval/lib -lspandsp"
+                  SPANDSP_LIBS="-L$withval/lib -lspandsp3"
 
 else
 
@@ -11616,12 +11616,12 @@ if test -n "$SPANDSP_CFLAGS"; then
     pkg_cv_SPANDSP_CFLAGS="$SPANDSP_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"spandsp\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "spandsp") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"spandsp3\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "spandsp3") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_SPANDSP_CFLAGS=`$PKG_CONFIG --cflags "spandsp" 2>/dev/null`
+  pkg_cv_SPANDSP_CFLAGS=`$PKG_CONFIG --cflags "spandsp3" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -11633,12 +11633,12 @@ if test -n "$SPANDSP_LIBS"; then
     pkg_cv_SPANDSP_LIBS="$SPANDSP_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"spandsp\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "spandsp") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"spandsp3\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "spandsp3") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_SPANDSP_LIBS=`$PKG_CONFIG --libs "spandsp" 2>/dev/null`
+  pkg_cv_SPANDSP_LIBS=`$PKG_CONFIG --libs "spandsp3" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -11659,16 +11659,16 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        SPANDSP_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "spandsp" 2>&1`
+	        SPANDSP_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "spandsp3" 2>&1`
         else
-	        SPANDSP_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "spandsp" 2>&1`
+	        SPANDSP_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "spandsp3" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$SPANDSP_PKG_ERRORS" >&5
 
 
                      SPANDSP_CFLAGS=""
-                     SPANDSP_LIBS="-lspandsp"
+                     SPANDSP_LIBS="-lspandsp3"
 
 
 elif test $pkg_failed = untried; then
@@ -11676,7 +11676,7 @@ elif test $pkg_failed = untried; then
 $as_echo "no" >&6; }
 
                      SPANDSP_CFLAGS=""
-                     SPANDSP_LIBS="-lspandsp"
+                     SPANDSP_LIBS="-lspandsp3"
 
 
 else
@@ -11700,7 +11700,7 @@ fi
 $as_echo_n "checking for SpanDSP based fax usability... " >&6; }
    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#include <spandsp.h>
+#include <spandsp3.h>
 int
 main ()
 {

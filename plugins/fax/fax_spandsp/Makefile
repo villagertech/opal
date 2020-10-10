@@ -20,7 +20,7 @@
 # Contributor(s): ______________________________________.
 #
 
-BASENAME := spandsp
+BASENAME := spandsp3
 
 SRCDIR	 := $(CURDIR)
 SOURCES  := $(CURDIR)/spandsp_fax.cpp
