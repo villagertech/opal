@@ -80,7 +80,11 @@ static PluginCodec_LogFunction LogFunction;
       LogFunction(level, __FILE__, __LINE__, "FaxCodec", ptrace_strm.str().c_str()); \
     } else (void)0
 
-static void SpanDSP_Message(int level, const char *text)
+/* 
+    SpanDSP3 requires 3 values for callbacks of type message_handler_func_t.
+    `user_data` is a never actually touched, and is reserved for future use?
+*/
+static void SpanDSP_Message(void *user_data, int level, const char *text)
 {
   if (*text != '\0' && LogFunction != NULL) {
     // Close mapping between spandsp levels and OPAL ones, kust one tweak
@@ -99,7 +103,11 @@ static void SpanDSP_Message(int level, const char *text)
 
 static void InitLogging(logging_state_t * logging, const std::string & tag)
 {
-  span_log_set_message_handler(logging, SpanDSP_Message);
+  /*
+    SpanDSP3 requires 3 values, though the 3rd value is undefined and set to
+    NULL in the test files.
+   */
+  span_log_set_message_handler(logging, SpanDSP_Message, NULL);
 
   int level = SPAN_LOG_SHOW_SEVERITY | SPAN_LOG_SHOW_PROTOCOL | SPAN_LOG_DEBUG;
 
